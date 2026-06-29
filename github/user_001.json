@@ -1,0 +1,11 @@
+{
+  "id": "user_001",
+  "username": "melophile_1",
+  "email": "melophile1@example.com",
+  "preferences": {
+    "highQualityAudio": true,
+    "dataSaver": false,
+    "offlineMode": true
+  },
+  "joinDate": "2023-01-15T10:00:00Z"
+}

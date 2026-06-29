@@ -1,0 +1,70 @@
+/* src/components/ProfileSettings.css */
+
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.profile-container {
+  background: var(--bg-color);
+  color: var(--text-color, #121212);
+  border-radius: 12px;
+  max-width: 480px;
+  width: 90%;
+  padding: 24px;
+  box-shadow: var(--neu-shadow-out);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: none;
+}
+
+.profile-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+}
+
+.setting-item label {
+  margin-right: 8px;
+}
+
+.profile-close-btn {
+  align-self: flex-end;
+  background: var(--bg-color);
+  color: var(--text-color);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.profile-close-btn:hover {
+  background: var(--hover-bg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .profile-container {
+    max-width: 100%;
+    padding: 16px;
+  }
+  .profile-title {
+    font-size: 20px;
+  }
+}

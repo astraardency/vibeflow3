@@ -1,0 +1,11 @@
+{
+  "id": "user_002",
+  "username": "vibe_master",
+  "email": "vibes@example.com",
+  "preferences": {
+    "highQualityAudio": true,
+    "dataSaver": true,
+    "offlineMode": false
+  },
+  "joinDate": "2023-05-22T14:30:00Z"
+}

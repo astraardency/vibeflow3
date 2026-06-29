@@ -1,0 +1,116 @@
+.all-songs-container {
+  padding: 0 var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.all-songs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.song-row-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--neu-shadow-sm);
+  border: none;
+}
+
+.song-row-item:hover {
+  box-shadow: var(--neu-shadow-out);
+  transform: translateY(-1px);
+}
+
+.song-row-item:active {
+  box-shadow: var(--neu-shadow-in);
+  transform: translateY(1px);
+}
+
+.song-row-item.active-row {
+  background-color: #ffebe0;
+  border: 1px solid rgba(245, 149, 74, 0.3);
+}
+
+.song-row-img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  margin-right: var(--spacing-md);
+}
+
+.song-row-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.song-row-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.song-row-artist {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.song-row-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.song-row-btn.liked {
+  color: var(--card-orange);
+}
+
+.load-more-btn {
+  width: 100%;
+  background: none;
+  border: 1.5px solid #e0e0e0;
+  color: var(--text-color);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-top: var(--spacing-md);
+  transition: all 0.2s ease;
+}
+
+.load-more-btn:hover {
+  background-color: #000000;
+  color: white;
+  border-color: #000000;
+}
+
+@media (min-width: 768px) {
+  .song-row-item {
+    padding: 10px 16px;
+  }
+}

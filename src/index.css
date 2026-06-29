@@ -1,0 +1,241 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-color: #e0e5ec;
+  --text-color: #333333;
+  --text-secondary: #6b6b6b;
+  --card-dark: #e0e5ec;
+  --card-orange: #f5954a;
+  
+  --neu-light: #ffffff;
+  --neu-dark: #a3b1c6;
+  --neu-shadow-out: 9px 9px 16px rgba(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
+  --neu-shadow-in: inset 6px 6px 10px 0 rgba(163, 177, 198, 0.7), inset -6px -6px 10px 0 rgba(255, 255, 255, 0.8);
+  --neu-shadow-hover: 12px 12px 20px rgba(163, 177, 198, 0.7), -12px -12px 20px rgba(255, 255, 255, 0.6);
+  --neu-shadow-sm: 4px 4px 8px rgba(163, 177, 198, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.4);
+  
+  --font-family: 'Inter', sans-serif;
+  
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 9999px;
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #292d32;
+    --text-color: #ffffff;
+    --text-secondary: #a0a0a0;
+    --card-dark: #292d32;
+    
+    --neu-light: #383d44;
+    --neu-dark: #1a1c20;
+    --neu-shadow-out: 9px 9px 16px rgba(0, 0, 0, 0.5), -9px -9px 16px rgba(255, 255, 255, 0.05);
+    --neu-shadow-in: inset 6px 6px 10px 0 rgba(0, 0, 0, 0.6), inset -6px -6px 10px 0 rgba(255, 255, 255, 0.05);
+    --neu-shadow-hover: 12px 12px 20px rgba(0, 0, 0, 0.6), -12px -12px 20px rgba(255, 255, 255, 0.05);
+    --neu-shadow-sm: 4px 4px 8px rgba(0, 0, 0, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.05);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+p {
+  font-size: 14px;
+}
+
+/* Utility for hiding scrollbar in horizontal lists */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* App container specifically for mobile bounds when on desktop */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  position: relative;
+  padding-bottom: 100px; /* Space for bottom nav */
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+}
+
+/* Toast styles */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background-color: var(--card-dark);
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Glassmorphism & UI Utilities */
+.glass-panel {
+  background: var(--bg-color);
+  box-shadow: var(--neu-shadow-out);
+  border: none;
+  border-radius: var(--radius-lg);
+}
+
+.glass-nav {
+  background: var(--bg-color);
+  box-shadow: var(--neu-shadow-sm);
+  border: none;
+}
+
+/* Animation Utilities */
+.scale-on-click {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.scale-on-click:active {
+  transform: scale(0.92) !important;
+}
+
+.player-slide-up {
+  animation: playerSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes playerSlideUp {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.player-slide-down {
+  animation: playerSlideDown 0.3s ease-in forwards;
+}
+
+@keyframes playerSlideDown {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+/* Animated Gradient Background for Full Screen Player */
+.modern-gradient-bg {
+  background: linear-gradient(-45deg, #1e1e21, #2c2c35, #16161a, #2a2228);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.album-shadow {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+/* Global transparency for Camera Scanner Overlay */
+html:has(body.scanner-active),
+body.scanner-active,
+body.scanner-active #root,
+body.scanner-active .app-container,
+body.scanner-active .account-overlay,
+body.scanner-active .modern-auth-container,
+body.scanner-active .mobile-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  --bg-color: transparent !important;
+}
+
+/* Hide all app content and settings menus while scanning */
+body.scanner-active .app-container > *:not(.account-overlay),
+body.scanner-active .account-container {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Micro-Animations */
+.spin-slow {
+  animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite both;
+}
+
+@keyframes heartbeat {
+  from {
+    transform: scale(1);
+    transform-origin: center center;
+    animation-timing-function: ease-out;
+  }
+  10% {
+    transform: scale(1.15);
+    animation-timing-function: ease-in;
+  }
+  17% {
+    transform: scale(1.05);
+    animation-timing-function: ease-out;
+  }
+  33% {
+    transform: scale(1.2);
+    animation-timing-function: ease-in;
+  }
+  45% {
+    transform: scale(1);
+    animation-timing-function: ease-out;
+  }
+}

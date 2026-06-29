@@ -1,0 +1,56 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xl) var(--spacing-md) var(--spacing-md) var(--spacing-md);
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.header-title h1 {
+  line-height: 1.2;
+  margin: 0;
+  padding-bottom: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.download-btn {
+  background: var(--bg-color);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  box-shadow: var(--neu-shadow-out);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.download-btn:active {
+  box-shadow: var(--neu-shadow-in);
+}
+
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  background-color: var(--bg-color);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--neu-shadow-out);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.profile-avatar:active {
+  box-shadow: var(--neu-shadow-in);
+}

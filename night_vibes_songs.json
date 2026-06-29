@@ -1,0 +1,1064 @@
+[
+  {
+    "id": "song_1",
+    "title": "Veriyae - Night Life",
+    "artist": "Narayan, Naveen Madhav, Ranjith Govind, Vasu",
+    "img": "image_url_1.jpg",
+    "audioUrl": "audio_url_1.mp3",
+    "duration": 250,
+    "album": "Pudhupettai"
+  },
+  {
+    "id": "song_2",
+    "title": "Hey Vaada Vaada",
+    "artist": "M.L.R. Karthikeyan, Anitha Karthikeyan",
+    "img": "image_url_2.jpg",
+    "audioUrl": "audio_url_2.mp3",
+    "duration": 250,
+    "album": "Kacheri Aarambam"
+  },
+  {
+    "id": "song_3",
+    "title": "Pottu Thekku",
+    "artist": "Srikanth Deva, Silambarasan TR, Roshini",
+    "img": "image_url_3.jpg",
+    "audioUrl": "audio_url_3.mp3",
+    "duration": 250,
+    "album": "Kuthu"
+  },
+  {
+    "id": "song_4",
+    "title": "Yapang Chupang",
+    "artist": "Shankar Mahadevan",
+    "img": "image_url_4.jpg",
+    "audioUrl": "audio_url_4.mp3",
+    "duration": 250,
+    "album": "Jithan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_5",
+    "title": "Aathangara Orathil",
+    "artist": "Harris Jayaraj, Gana Bala, MC Vickey, Kabilan",
+    "img": "image_url_5.jpg",
+    "audioUrl": "audio_url_5.mp3",
+    "duration": 250,
+    "album": "Yaan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_6",
+    "title": "Kanadhasan Karaikudi",
+    "artist": "Mysskin",
+    "img": "image_url_6.jpg",
+    "audioUrl": "audio_url_6.mp3",
+    "duration": 250,
+    "album": "Anjathe (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_7",
+    "title": "Kannitheevu Ponna",
+    "artist": "K, M.L.R. Karthikeyan, Raqueeb Alam, Kabilan",
+    "img": "image_url_7.jpg",
+    "audioUrl": "audio_url_7.mp3",
+    "duration": 250,
+    "album": "Yuddham Sei(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_8",
+    "title": "Padichi Parthen",
+    "artist": "Shankar Mahadevan",
+    "img": "image_url_8.jpg",
+    "audioUrl": "audio_url_8.mp3",
+    "duration": 250,
+    "album": "Polladhavan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_9",
+    "title": "Makkayala",
+    "artist": "Mark, Sakthi Sree, Krishan(Rap), Mahesan",
+    "img": "image_url_9.jpg",
+    "audioUrl": "audio_url_9.mp3",
+    "duration": 250,
+    "album": "Naan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_10",
+    "title": "Macha Kanni",
+    "artist": "Vijay Antony, Jayarajagopalam, Sathya Lakshmi",
+    "img": "image_url_10.jpg",
+    "audioUrl": "audio_url_10.mp3",
+    "duration": 250,
+    "album": "Naan Avanillai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_11",
+    "title": "Jalsa (From \"Chennai-600028\")",
+    "artist": "Ranjith Govind, Tippu, Haricharan, Karthik, Premgi Amaren",
+    "img": "image_url_11.jpg",
+    "audioUrl": "audio_url_11.mp3",
+    "duration": 250,
+    "album": "Ranjith Hits at Yuvan Music"
+  },
+  {
+    "id": "song_12",
+    "title": "Kathala Kannala",
+    "artist": "Naveen Madhav",
+    "img": "image_url_12.jpg",
+    "audioUrl": "audio_url_12.mp3",
+    "duration": 250,
+    "album": "Anjathe (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_13",
+    "title": "Machi Open the Bottle",
+    "artist": "Yuvan Shankar Raja, Mano, Premgi Amaren, Tippu, Haricharan, Naveen Madhav, Vaali",
+    "img": "image_url_13.jpg",
+    "audioUrl": "audio_url_13.mp3",
+    "duration": 250,
+    "album": "Mankatha (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_14",
+    "title": "Where Is the Party (From \"Silambattam\")",
+    "artist": "Yuvan Shankar Raja, Mukesh, Priyadharshini, Silambarasan TR",
+    "img": "image_url_14.jpg",
+    "audioUrl": "audio_url_14.mp3",
+    "duration": 250,
+    "album": "My Playlist: Yuvanshankar Raja"
+  },
+  {
+    "id": "song_15",
+    "title": "Mascara",
+    "artist": "Supriya Joshi, Vijay Antony",
+    "img": "image_url_15.jpg",
+    "audioUrl": "audio_url_15.mp3",
+    "duration": 250,
+    "album": "Salim"
+  },
+  {
+    "id": "song_16",
+    "title": "Ammadi Aathadi",
+    "artist": "Silambarasan TR, T. Rajendar, Suchitra, Mahathi, Perarasu",
+    "img": "image_url_16.jpg",
+    "audioUrl": "audio_url_16.mp3",
+    "duration": 250,
+    "album": "Vallavan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_17",
+    "title": "Yen Chellaperu Apple",
+    "artist": "Suchitra, A. V. Ramanan, Pa. Vijay, Mani Sharma",
+    "img": "image_url_17.jpg",
+    "audioUrl": "audio_url_17.mp3",
+    "duration": 250,
+    "album": "Pokkiri (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_18",
+    "title": "Daddy Mummy",
+    "artist": "Devi Sri Prasad, Mamta Mohandas, Naveen Madhav",
+    "img": "image_url_18.jpg",
+    "audioUrl": "audio_url_18.mp3",
+    "duration": 250,
+    "album": "Villu (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_19",
+    "title": "En Aasai Mythiliye",
+    "artist": "Yuvan Shankar Raja, Silambarasan TR, Suchitra",
+    "img": "image_url_19.jpg",
+    "audioUrl": "audio_url_19.mp3",
+    "duration": 250,
+    "album": "Manmadhan"
+  },
+  {
+    "id": "song_20",
+    "title": "Sathikadi",
+    "artist": "Sangeetha Mahadevan, Vijay Antony",
+    "img": "image_url_20.jpg",
+    "audioUrl": "audio_url_20.mp3",
+    "duration": 250,
+    "album": "Sukran (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_21",
+    "title": "Kacheri Kacheri",
+    "artist": "Mukesh, Madhushree",
+    "img": "image_url_21.jpg",
+    "audioUrl": "audio_url_21.mp3",
+    "duration": 250,
+    "album": "Kacheri Aarambam"
+  },
+  {
+    "id": "song_22",
+    "title": "Naatu Sarakku",
+    "artist": "Dhanush, Ranjith Govind, Pa. Vijay",
+    "img": "image_url_22.jpg",
+    "audioUrl": "audio_url_22.mp3",
+    "duration": 250,
+    "album": "Pudhukottaiyilirundhu Saravanan (Original Motion Picture So..."
+  },
+  {
+    "id": "song_23",
+    "title": "Seena Thana",
+    "artist": "Bharadwaj, Grace, Vairamuthu",
+    "img": "image_url_23.jpg",
+    "audioUrl": "audio_url_23.mp3",
+    "duration": 250,
+    "album": "Vasool Raja MBBS (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_24",
+    "title": "Kadhal Vaibhogame",
+    "artist": "Srikanth Deva, Arivunidhi, S. Janaki",
+    "img": "image_url_24.jpg",
+    "audioUrl": "audio_url_24.mp3",
+    "duration": 250,
+    "album": "Perumal (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_25",
+    "title": "Pattukotta Ammalu",
+    "artist": "Malaysia Vasudevan",
+    "img": "image_url_25.jpg",
+    "audioUrl": "audio_url_25.mp3",
+    "duration": 250,
+    "album": "Ranga (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_26",
+    "title": "Pesavey Pesatha",
+    "artist": "M.M. Keeravani, Manikka Vinayagam, R. Jayadev, Janaki Iyer",
+    "img": "image_url_26.jpg",
+    "audioUrl": "audio_url_26.mp3",
+    "duration": 250,
+    "album": "Maaveeran (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_27",
+    "title": "Sarakku Vechirukken (From \"Shahjahan\")",
+    "artist": "Shankar Mahadevan, Radhika",
+    "img": "image_url_27.jpg",
+    "audioUrl": "audio_url_27.mp3",
+    "duration": 250,
+    "album": "Hits of Shankar Mahadevan"
+  },
+  {
+    "id": "song_28",
+    "title": "Kalasala Kalasala",
+    "artist": "Thaman S, L. R. Eswari, T. Rajendar, Solar Sai, Vaali",
+    "img": "image_url_28.jpg",
+    "audioUrl": "audio_url_28.mp3",
+    "duration": 250,
+    "album": "Osthe (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_29",
+    "title": "Vachukkava (From \"Silambattam\") - Remix",
+    "artist": "Yuvan Shankar Raja, Silambarasan TR, Suchitra",
+    "img": "image_url_29.jpg",
+    "audioUrl": "audio_url_29.mp3",
+    "duration": 250,
+    "album": "My Playlist: Yuvanshankar Raja"
+  },
+  {
+    "id": "song_30",
+    "title": "No Money No Honey",
+    "artist": "Silambarasan TR, Andrea Jeremiah",
+    "img": "image_url_30.jpg",
+    "audioUrl": "audio_url_30.mp3",
+    "duration": 250,
+    "album": "Vaanam (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_31",
+    "title": "Bombay Ponnu",
+    "artist": "Vijay Antony, Mamta Sharma, M.L.R. Karthikeyan, Senthil Dass",
+    "img": "image_url_31.jpg",
+    "audioUrl": "audio_url_31.mp3",
+    "duration": 250,
+    "album": "Vedi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_32",
+    "title": "Machan Meesai",
+    "artist": "Vidyasagar, Pushpa Sriram",
+    "img": "image_url_32.jpg",
+    "audioUrl": "audio_url_32.mp3",
+    "duration": 250,
+    "album": "Dhill (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_33",
+    "title": "Karuppu Perazhaga",
+    "artist": "Sichith, Dharshana",
+    "img": "image_url_33.jpg",
+    "audioUrl": "audio_url_33.mp3",
+    "duration": 250,
+    "album": "Kanchana"
+  },
+  {
+    "id": "song_34",
+    "title": "Thattu Thattu (From \"Ethirum Puthirum\")",
+    "artist": "Swarnalatha, Pushpavanam Kuppusamy",
+    "img": "image_url_34.jpg",
+    "audioUrl": "audio_url_34.mp3",
+    "duration": 250,
+    "album": "Vidyasagar Hit Songs"
+  },
+  {
+    "id": "song_35",
+    "title": "En Peru Meenakumari",
+    "artist": "Devi Sri Prasad, Malathi, Viveka",
+    "img": "image_url_35.jpg",
+    "audioUrl": "audio_url_35.mp3",
+    "duration": 250,
+    "album": "Kanthaswamy (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_36",
+    "title": "Oo Solriya Oo Oo Solriya (From \"Pushpa - The Rise\" )(Tamil)",
+    "artist": "Devi Sri Prasad, Andrea Jeremiah, Viveka",
+    "img": "image_url_36.jpg",
+    "audioUrl": "audio_url_36.mp3",
+    "duration": 250,
+    "album": "Oo Solriya Oo Oo Solriya (From \"Pushpa - The Rise\")(Tamil)"
+  },
+  {
+    "id": "song_37",
+    "title": "Kutti Pisase",
+    "artist": "G. V. Prakash, Silambarasan TR, Suchitra, Vaali",
+    "img": "image_url_37.jpg",
+    "audioUrl": "audio_url_37.mp3",
+    "duration": 250,
+    "album": "Kaalai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_38",
+    "title": "Dheemthanakka Thillana",
+    "artist": "Devi Sri Prasad, Snehan",
+    "img": "image_url_38.jpg",
+    "audioUrl": "audio_url_38.mp3",
+    "duration": 250,
+    "album": "Villu (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_39",
+    "title": "Hey Rosu Rosu",
+    "artist": "Mani Sharma, Ranjith Govind, Jaey",
+    "img": "image_url_39.jpg",
+    "audioUrl": "audio_url_39.mp3",
+    "duration": 250,
+    "album": "Padikkathavan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_40",
+    "title": "Kathaadikkuthu Kathaadikkuthu",
+    "artist": "Deva, Sabesh, Krishnaraj",
+    "img": "image_url_40.jpg",
+    "audioUrl": "audio_url_40.mp3",
+    "duration": 250,
+    "album": "Ninaivirukkum Varai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_41",
+    "title": "Yay Aatha (\"From Malaikottai\" )",
+    "artist": "Tippu, Anuradha Sriram",
+    "img": "image_url_41.jpg",
+    "audioUrl": "audio_url_41.mp3",
+    "duration": 250,
+    "album": "Hits of Anuradha Sriram"
+  },
+  {
+    "id": "song_42",
+    "title": "Balle Lakka",
+    "artist": "Yuvan Shankar Raja, Karthik, Vijay Yesudas, Anusha Dhayanidhi",
+    "img": "image_url_42.jpg",
+    "audioUrl": "audio_url_42.mp3",
+    "duration": 250,
+    "album": "Mankatha (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_43",
+    "title": "Vethalaiya Potendi",
+    "artist": "Yuvan Shankar Raja, Pa. Vijay, Shankar Mahadevan",
+    "img": "image_url_43.jpg",
+    "audioUrl": "audio_url_43.mp3",
+    "duration": 250,
+    "album": "Billa (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_44",
+    "title": "Aadi Maasa Kaathadikka",
+    "artist": "Srikanth Deva, Udit Narayan, Anuradha Sriram",
+    "img": "image_url_44.jpg",
+    "audioUrl": "audio_url_44.mp3",
+    "duration": 250,
+    "album": "Thottupaar (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_45",
+    "title": "Vachikka vachikka",
+    "artist": "KK, Srilekha Parthasarathy",
+    "img": "image_url_45.jpg",
+    "audioUrl": "audio_url_45.mp3",
+    "duration": 250,
+    "album": "M.Kumaran Son of Mahalakshmi(Original Motion Picture So..."
+  },
+  {
+    "id": "song_46",
+    "title": "Malay Malay",
+    "artist": "Anuradha Sriram, AcRehanah, Mahalakshmi Iyer",
+    "img": "image_url_46.jpg",
+    "audioUrl": "audio_url_46.mp3",
+    "duration": 250,
+    "album": "Chocklet (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_47",
+    "title": "Nallamdhana",
+    "artist": "Yuvan Shankar Raja, Silambarasan TR, Earl, Suzi Q, SUVI",
+    "img": "image_url_47.jpg",
+    "audioUrl": "audio_url_47.mp3",
+    "duration": 250,
+    "album": "Silambattam (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_48",
+    "title": "ValamanuKkum",
+    "artist": "Gana Ulaganathan",
+    "img": "image_url_48.jpg",
+    "audioUrl": "audio_url_48.mp3",
+    "duration": 250,
+    "album": "Chithiram Pesuthadi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_49",
+    "title": "Chiku Chiku Boom Boom",
+    "artist": "D. Imman, Keerthi Sagathia, Feji, Baby Harini",
+    "img": "image_url_49.jpg",
+    "audioUrl": "audio_url_49.mp3",
+    "duration": 250,
+    "album": "Masilamani (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_50",
+    "title": "Appa Amma Vilayatta",
+    "artist": "Mani Sharma, Ranjith Govind, Saindhavi",
+    "img": "image_url_50.jpg",
+    "audioUrl": "audio_url_50.mp3",
+    "duration": 250,
+    "album": "Padikkathavan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_51",
+    "title": "I Am a Kuthu Dancer",
+    "artist": "Dharan Kumar, Shankar Mahadevan, Silambarasan TR",
+    "img": "image_url_51.jpg",
+    "audioUrl": "audio_url_51.mp3",
+    "duration": 250,
+    "album": "Podaa Podi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_52",
+    "title": "Vaadiamma",
+    "artist": "Vidyasagar, Udit Narayan",
+    "img": "image_url_52.jpg",
+    "audioUrl": "audio_url_52.mp3",
+    "duration": 250,
+    "album": "Thirumalai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_53",
+    "title": "Un Mela Aasadhaan",
+    "artist": "G. V. Prakash, Dhanush, Aishwarya R Dhanush, Andrea Jeremiah, Selvaraghavan",
+    "img": "image_url_53.jpg",
+    "audioUrl": "audio_url_53.mp3",
+    "duration": 250,
+    "album": "Aayirathil Oruvan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_54",
+    "title": "Appan Panna (\"From Thiruppattchi\" )",
+    "artist": "Pushpavanam Kuppusamy, Anuradha Sriram",
+    "img": "image_url_54.jpg",
+    "audioUrl": "audio_url_54.mp3",
+    "duration": 250,
+    "album": "Hits of Anuradha Sriram"
+  },
+  {
+    "id": "song_55",
+    "title": "Mannarkudi Kalakalakka",
+    "artist": "Manikka Vinayagam, Rajlakshmi Devi, Chinna Ponnu",
+    "img": "image_url_55.jpg",
+    "audioUrl": "audio_url_55.mp3",
+    "duration": 250,
+    "album": "Sivappathigaram"
+  },
+  {
+    "id": "song_56",
+    "title": "Palakkattu Pakkathile",
+    "artist": "Yuvan Shankar Raja, Hariharan, Suchitra, Vinaya",
+    "img": "image_url_56.jpg",
+    "audioUrl": "audio_url_56.mp3",
+    "duration": 250,
+    "album": "Yaaradi Nee Mohini (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_57",
+    "title": "Neduvaali",
+    "artist": "Thaman S, Rahul Nambiar, Mahathi, Yugabharathi",
+    "img": "image_url_57.jpg",
+    "audioUrl": "audio_url_57.mp3",
+    "duration": 250,
+    "album": "Osthe (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_58",
+    "title": "Saroja Saman Nikalo",
+    "artist": "Shankar Mahadevan, Premgi Amaren",
+    "img": "image_url_58.jpg",
+    "audioUrl": "audio_url_58.mp3",
+    "duration": 250,
+    "album": "Chennai-600028 (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_59",
+    "title": "Nandooruthu",
+    "artist": "C. Sathya, Palani Ammal, Chinna",
+    "img": "image_url_59.jpg",
+    "audioUrl": "audio_url_59.mp3",
+    "duration": 250,
+    "album": "Nedunchalai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_60",
+    "title": "Naa Kaakinaada",
+    "artist": "Thaman S, Suchitra, Yugabharathi",
+    "img": "image_url_60.jpg",
+    "audioUrl": "audio_url_60.mp3",
+    "duration": 250,
+    "album": "Sindhanai Sei (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_61",
+    "title": "Manogari",
+    "artist": "Haricharan, Mohana",
+    "img": "image_url_61.jpg",
+    "audioUrl": "audio_url_61.mp3",
+    "duration": 250,
+    "album": "Baahubali - The Beginning"
+  },
+  {
+    "id": "song_62",
+    "title": "Aasai Dosaai",
+    "artist": "Priya Subramaniam",
+    "img": "image_url_62.jpg",
+    "audioUrl": "audio_url_62.mp3",
+    "duration": 250,
+    "album": "Paramasivam"
+  },
+  {
+    "id": "song_63",
+    "title": "Pia.. Pia..",
+    "artist": "Vijay Antony, Annamalai",
+    "img": "image_url_63.jpg",
+    "audioUrl": "audio_url_63.mp3",
+    "duration": 250,
+    "album": "Ninaithale Inikkum (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_64",
+    "title": "Uchimandai",
+    "artist": "Vijay Antony, Krishna Iyer, Shoba Chandrasekhar, Charulatha Mani, Shakthisree Gopalan, Annamalai",
+    "img": "image_url_64.jpg",
+    "audioUrl": "audio_url_64.mp3",
+    "duration": 250,
+    "album": "Vettaikaaran (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_65",
+    "title": "Ussumu Laresey",
+    "artist": "Vijay Antony, Emcee Jazz, Janaki Iyer",
+    "img": "image_url_65.jpg",
+    "audioUrl": "audio_url_65.mp3",
+    "duration": 250,
+    "album": "Uthama Puthiran (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_66",
+    "title": "Thanjavoor Jilla Kaari",
+    "artist": "Mani Sharma, Hemachandra Vedala, Saindhavi, Na.Muthukumar",
+    "img": "image_url_66.jpg",
+    "audioUrl": "audio_url_66.mp3",
+    "duration": 250,
+    "album": "Suraa (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_67",
+    "title": "Bambhara Kannaley",
+    "artist": "Udit Narayan, Sadhana Sargam",
+    "img": "image_url_67.jpg",
+    "audioUrl": "audio_url_67.mp3",
+    "duration": 250,
+    "album": "Bambhara Kannaley (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_68",
+    "title": "Kannu Randum",
+    "artist": "Devi Sri Prasad, Priya Ramesh, Mukesh, Viveka",
+    "img": "image_url_68.jpg",
+    "audioUrl": "audio_url_68.mp3",
+    "duration": 250,
+    "album": "Kutty (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_69",
+    "title": "Kitta Nerungi Vaadi",
+    "artist": "Vijay Antony, Sukhwinder Singh, Gayathri",
+    "img": "image_url_69.jpg",
+    "audioUrl": "audio_url_69.mp3",
+    "duration": 250,
+    "album": "Dishyum (Original Background Score)"
+  },
+  {
+    "id": "song_70",
+    "title": "Thanni Karuthirichi",
+    "artist": "Achu, Silambarasan TR, Vineetha Ajith, Vaali",
+    "img": "image_url_70.jpg",
+    "audioUrl": "audio_url_70.mp3",
+    "duration": 250,
+    "album": "Yennai Theriyuma (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_71",
+    "title": "Azhagha Poranthuputa",
+    "artist": "Malathy Laxman, Priyadharshini",
+    "img": "image_url_71.jpg",
+    "audioUrl": "audio_url_71.mp3",
+    "duration": 250,
+    "album": "Siruthai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_72",
+    "title": "Sexy Lady",
+    "artist": "Vijay Antony, MK Balaji, Sheba, Maya Iyer, Ramya",
+    "img": "image_url_72.jpg",
+    "audioUrl": "audio_url_72.mp3",
+    "duration": 250,
+    "album": "Ninaithale Inikkum (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_73",
+    "title": "Malaaiyooru",
+    "artist": "Megha, Thaman S, Na.Muthukumar",
+    "img": "image_url_73.jpg",
+    "audioUrl": "audio_url_73.mp3",
+    "duration": 250,
+    "album": "Mambattiyan"
+  },
+  {
+    "id": "song_74",
+    "title": "Dol Dol (From \"Pakkiri\")",
+    "artist": "Ranjith Govind, Suchitra",
+    "img": "image_url_74.jpg",
+    "audioUrl": "audio_url_74.mp3",
+    "duration": 250,
+    "album": "Ranjith and Naveen Hits"
+  },
+  {
+    "id": "song_75",
+    "title": "Odi Odi Vilayada",
+    "artist": "D. Imman, Mukesh, SUVI, Emcee Jesz, Na.Muthukumar",
+    "img": "image_url_75.jpg",
+    "audioUrl": "audio_url_75.mp3",
+    "duration": 250,
+    "album": "Masilamani (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_76",
+    "title": "Kaavaalaa (From \"Jailer\")",
+    "artist": "Anirudh Ravichander, Shilpa Rao, Arunraja Kamaraj",
+    "img": "image_url_76.jpg",
+    "audioUrl": "audio_url_76.mp3",
+    "duration": 250,
+    "album": "Kaavaalaa (From \"Jailer\")"
+  },
+  {
+    "id": "song_77",
+    "title": "Desi Girl",
+    "artist": "Vishal-Shekhar, Shankar Mahadevan, Sunidhi Chauhan, Vishal Dadlani",
+    "img": "image_url_77.jpg",
+    "audioUrl": "audio_url_77.mp3",
+    "duration": 250,
+    "album": "Dostana (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_78",
+    "title": "Pudikale Pudikudhu",
+    "artist": "Devi Sri Prasad, Mukesh, Suchitra",
+    "img": "image_url_78.jpg",
+    "audioUrl": "audio_url_78.mp3",
+    "duration": 250,
+    "album": "Venghai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_79",
+    "title": "Kokku Meena",
+    "artist": "Shankar Mahadevan, Srilekha Parthasarathy",
+    "img": "image_url_79.jpg",
+    "audioUrl": "audio_url_79.mp3",
+    "duration": 250,
+    "album": "Kovil (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_80",
+    "title": "Thee Pidikha",
+    "artist": "Anushka Manchanda, Premgi Amaren",
+    "img": "image_url_80.jpg",
+    "audioUrl": "audio_url_80.mp3",
+    "duration": 250,
+    "album": "Arinthum Ariyamalum (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_81",
+    "title": "Kattipudi Kattipudida",
+    "artist": "Vasundhara Das, Shankar Mahadevan, Vairamuthu",
+    "img": "image_url_81.jpg",
+    "audioUrl": "audio_url_81.mp3",
+    "duration": 250,
+    "album": "Kushi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_82",
+    "title": "Dailamo Dailamo",
+    "artist": "Vijay Antony, Sangeetha Rajeshwaran",
+    "img": "image_url_82.jpg",
+    "audioUrl": "audio_url_82.mp3",
+    "duration": 250,
+    "album": "Dishyum (Original Background Score)"
+  },
+  {
+    "id": "song_83",
+    "title": "Neruppe",
+    "artist": "Harris Jayaraj, Franko, Solar Sai, Sowmya, Thamarai",
+    "img": "image_url_83.jpg",
+    "audioUrl": "audio_url_83.mp3",
+    "duration": 250,
+    "album": "Vettaiyadu Vilayadu (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_84",
+    "title": "Irukkana Idupu Irukkana",
+    "artist": "Vijay Prakash, Javed Ali, Sunidhi Chauhan",
+    "img": "image_url_84.jpg",
+    "audioUrl": "audio_url_84.mp3",
+    "duration": 250,
+    "album": "Nanban (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_85",
+    "title": "Lalaa Kadai Saanthi",
+    "artist": "D. Imman, Benny Dayal, Sunidhi Chauhan",
+    "img": "image_url_85.jpg",
+    "audioUrl": "audio_url_85.mp3",
+    "duration": 250,
+    "album": "Saravanan Irukka Bayamaen (Original Motion Picture Sound..."
+  },
+  {
+    "id": "song_86",
+    "title": "Heartukulla",
+    "artist": "Vivek - Mervin, Nakash Aziz, Sanjana Diwakar",
+    "img": "image_url_86.jpg",
+    "audioUrl": "audio_url_86.mp3",
+    "duration": 250,
+    "album": "Gulaebaghavali (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_87",
+    "title": "Vaadi Vaadi",
+    "artist": "vijay",
+    "img": "image_url_87.jpg",
+    "audioUrl": "audio_url_87.mp3",
+    "duration": 250,
+    "album": "Sachien"
+  },
+  {
+    "id": "song_88",
+    "title": "Kodana Kodi",
+    "artist": "Ranina Reddy, SUVI, Rahul Nambiar",
+    "img": "image_url_88.jpg",
+    "audioUrl": "audio_url_88.mp3",
+    "duration": 250,
+    "album": "Saroja (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_89",
+    "title": "Akkam Pakkam",
+    "artist": "Sooraj Santhosh, Ramya Nambessan",
+    "img": "image_url_89.jpg",
+    "audioUrl": "audio_url_89.mp3",
+    "duration": 250,
+    "album": "Munnodi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_90",
+    "title": "Jingunamani",
+    "artist": "Ranjith Govind, Sunidhi Chauhan",
+    "img": "image_url_90.jpg",
+    "audioUrl": "audio_url_90.mp3",
+    "duration": 250,
+    "album": "Jilla (Original Music Picture Soundtrack)"
+  },
+  {
+    "id": "song_91",
+    "title": "Kannamma Kannamma",
+    "artist": "Deva, Udit Narayan, Anuradha Sriram",
+    "img": "image_url_91.jpg",
+    "audioUrl": "audio_url_91.mp3",
+    "duration": 250,
+    "album": "Dum (Original Background Score)"
+  },
+  {
+    "id": "song_92",
+    "title": "Sappida Vada",
+    "artist": "Srikanth Deva, Udit Narayan, Malathi",
+    "img": "image_url_92.jpg",
+    "audioUrl": "audio_url_92.mp3",
+    "duration": 250,
+    "album": "Kuthu"
+  },
+  {
+    "id": "song_93",
+    "title": "Vacchuka Vacchukava",
+    "artist": "Srikanth Deva, KK, Srilekha Parthasarathy",
+    "img": "image_url_93.jpg",
+    "audioUrl": "audio_url_93.mp3",
+    "duration": 250,
+    "album": "M. Kumaran S/O Mahalakshmi (Original Motion Picture Soun..."
+  },
+  {
+    "id": "song_94",
+    "title": "Soppana Sundari - MassTamilan.com",
+    "artist": "Yuvan Shankar Raja, Venkat Prabhu, Karthik Raja, Premji Amaran - MassTamilan.com",
+    "img": "image_url_94.jpg",
+    "audioUrl": "audio_url_94.mp3",
+    "duration": 250,
+    "album": "Chennai 600028 - 2nd Innings - MassTamilan.com"
+  },
+  {
+    "id": "song_95",
+    "title": "Madura Jilla",
+    "artist": "Karthik, Kalpana Patowary",
+    "img": "image_url_95.jpg",
+    "audioUrl": "audio_url_95.mp3",
+    "duration": 250,
+    "album": "Thiruvilayadal Arambam"
+  },
+  {
+    "id": "song_96",
+    "title": "Manmatha Raasa",
+    "artist": "Dhina, Shankar Mahadevan, Malathy",
+    "img": "image_url_96.jpg",
+    "audioUrl": "audio_url_96.mp3",
+    "duration": 250,
+    "album": "Thiruda Thirudi (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_97",
+    "title": "Madras To Madurai",
+    "artist": "Hiphop Tamizha, Kailash Kher, Vishnupriya Ravi, Maria 'Roe' Roshni Vincent",
+    "img": "image_url_97.jpg",
+    "audioUrl": "audio_url_97.mp3",
+    "duration": 250,
+    "album": "Aambala (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_98",
+    "title": "Aai Mailapuru",
+    "artist": "Srikanth Deva, Manikka Vinayagam, Sabesh, Ganga, Suchitra",
+    "img": "image_url_98.jpg",
+    "audioUrl": "audio_url_98.mp3",
+    "duration": 250,
+    "album": "Aai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_99",
+    "title": "Manja Sela",
+    "artist": "Mani Sharma, Tippu, Saindhavi",
+    "img": "image_url_99.jpg",
+    "audioUrl": "audio_url_99.mp3",
+    "duration": 250,
+    "album": "Thoranai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_100",
+    "title": "Onnu Rendu",
+    "artist": "Mani Sharma, Mukesh, Saindhavi",
+    "img": "image_url_100.jpg",
+    "audioUrl": "audio_url_100.mp3",
+    "duration": 250,
+    "album": "Mappillai (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_101",
+    "title": "Theekku Maramaattam",
+    "artist": "Manikka Vinayagam, Velmurugan, Karisal Kar",
+    "img": "image_url_101.jpg",
+    "audioUrl": "audio_url_101.mp3",
+    "duration": 250,
+    "album": "Magizchi"
+  },
+  {
+    "id": "song_102",
+    "title": "Sei Yedhavathu Sei",
+    "artist": "Yuvan Shankar Raja, Neha Bhasin, Preethi Balla",
+    "img": "image_url_102.jpg",
+    "audioUrl": "audio_url_102.mp3",
+    "duration": 250,
+    "album": "Billa (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_103",
+    "title": "Kuthu Vilakku",
+    "artist": "Ujjaini",
+    "img": "image_url_103.jpg",
+    "audioUrl": "audio_url_103.mp3",
+    "duration": 250,
+    "album": "Tamizh Padam (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_104",
+    "title": "Coca Cola Pole",
+    "artist": "Deva, Sabesh",
+    "img": "image_url_104.jpg",
+    "audioUrl": "audio_url_104.mp3",
+    "duration": 250,
+    "album": "Uyirile Kalanthathu (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_105",
+    "title": "Hey Vetri Velaa",
+    "artist": "Mani Sharma, Naveen, Ranjith Govind, Pa. Vijay",
+    "img": "image_url_105.jpg",
+    "audioUrl": "audio_url_105.mp3",
+    "duration": 250,
+    "album": "Padikkathavan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_106",
+    "title": "Jumbakka",
+    "artist": "Rafee",
+    "img": "image_url_106.jpg",
+    "audioUrl": "audio_url_106.mp3",
+    "duration": 250,
+    "album": "En Swasa Kaatre"
+  },
+  {
+    "id": "song_107",
+    "title": "Thumbakki Thumbai",
+    "artist": "Vijay Antony",
+    "img": "image_url_107.jpg",
+    "audioUrl": "audio_url_107.mp3",
+    "duration": 250,
+    "album": "Madha Gaja Raja"
+  },
+  {
+    "id": "song_108",
+    "title": "Itemkaaran",
+    "artist": "Ranjith Govind, Anitha Karthikeyan",
+    "img": "image_url_108.jpg",
+    "audioUrl": "audio_url_108.mp3",
+    "duration": 250,
+    "album": "Semma Botha Aagathey (Original Motion Picture Soundtr..."
+  },
+  {
+    "id": "song_109",
+    "title": "Kurchi Madathapetti (From \"Guntur Kaaram\")(Telugu)",
+    "artist": "Thaman S, Sri Krishna, Sahithi Chaganti, Mahesh Babu, Saraswati Putra Ramajogayya Sastry",
+    "img": "image_url_109.jpg",
+    "audioUrl": "audio_url_109.mp3",
+    "duration": 250,
+    "album": "Kurchi Madathapetti (From \"Guntur Kaaram\")(Telugu)"
+  },
+  {
+    "id": "song_110",
+    "title": "Achacho - From \"Aranmanai 4\"",
+    "artist": "Hiphop Tamizha, Kharesma Ravichandran, Srinisha Jayaseelan",
+    "img": "image_url_110.jpg",
+    "audioUrl": "audio_url_110.mp3",
+    "duration": 250,
+    "album": "Achacho (From \"Aranmanai 4\")"
+  },
+  {
+    "id": "song_111",
+    "title": "Oru Kuchi Oru Kulfi #TheSelfieSong",
+    "artist": "Hiphop Tamizha, Gana Vinoth, Saravedi Saran",
+    "img": "image_url_111.jpg",
+    "audioUrl": "audio_url_111.mp3",
+    "duration": 250,
+    "album": "Kalakalappu 2 (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_112",
+    "title": "Vaadi Vaadi Naattu Katta",
+    "artist": "Vidyasagar, Shankar Mahadevan, Sujatha",
+    "img": "image_url_112.jpg",
+    "audioUrl": "audio_url_112.mp3",
+    "duration": 250,
+    "album": "Alli Thantha Vaanam (Original Background Score)"
+  },
+  {
+    "id": "song_113",
+    "title": "Tinga Tinga - Tamil",
+    "artist": "Ghibran, Padmalatha",
+    "img": "image_url_113.jpg",
+    "audioUrl": "audio_url_113.mp3",
+    "duration": 250,
+    "album": "Theeran Adhigaaram Ondru"
+  },
+  {
+    "id": "song_114",
+    "title": "My Dear Loveru",
+    "artist": "Vishal",
+    "img": "image_url_114.jpg",
+    "audioUrl": "audio_url_114.mp3",
+    "duration": 250,
+    "album": "Madha Gaja Raja"
+  },
+  {
+    "id": "song_115",
+    "title": "Gaana Gaana",
+    "artist": "D. Imman, Shreya Ghoshal, Anand Aravindakshan, Madhan Karky",
+    "img": "image_url_115.jpg",
+    "audioUrl": "audio_url_115.mp3",
+    "duration": 250,
+    "album": "10 Endrathukulla (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_116",
+    "title": "Hara Hara Mahadevaki",
+    "artist": "Amrish, Padmalatha",
+    "img": "image_url_116.jpg",
+    "audioUrl": "audio_url_116.mp3",
+    "duration": 250,
+    "album": "Motta Shiva Ketta Shiva"
+  },
+  {
+    "id": "song_117",
+    "title": "Rangu Rangamma",
+    "artist": "Vijay Yesudas, Kailash Kher, Swarnalatha",
+    "img": "image_url_117.jpg",
+    "audioUrl": "audio_url_117.mp3",
+    "duration": 250,
+    "album": "Bheema (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_118",
+    "title": "Beeru Vanuma",
+    "artist": "Srikanth Deva, Shoba Chandrasekhar, Vikranth",
+    "img": "image_url_118.jpg",
+    "audioUrl": "audio_url_118.mp3",
+    "duration": 250,
+    "album": "Mudhal Kanave (Original Motion Picture Soundtrack)"
+  }
+]

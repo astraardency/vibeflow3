@@ -1,0 +1,596 @@
+[
+  {
+    "id": "song_1",
+    "title": "Iragai Pole",
+    "artist": "Yuvan Shankar Raja, Tanvi Shah",
+    "img": "image_url_1.jpg",
+    "audioUrl": "audio_url_1.mp3",
+    "duration": 250,
+    "album": "Naan Mahaan Alla (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_2",
+    "title": "Thaakkuthe Kan Thaakkuthe",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_2.jpg",
+    "audioUrl": "audio_url_2.mp3",
+    "duration": 250,
+    "album": "Baana Kaathadi(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_3",
+    "title": "Va Va Nilava",
+    "artist": "Haricharan",
+    "img": "image_url_3.jpg",
+    "audioUrl": "audio_url_3.mp3",
+    "duration": 250,
+    "album": "Naan Mahaan Alla (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_4",
+    "title": "Solli Tholaiyen Ma",
+    "artist": "Yuvan Shankar Raja, Dhanush",
+    "img": "image_url_4.jpg",
+    "audioUrl": "audio_url_4.mp3",
+    "duration": 250,
+    "album": "Yaakkai(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_5",
+    "title": "Oh Shala Oh Shala",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_5.jpg",
+    "audioUrl": "audio_url_5.mp3",
+    "duration": 250,
+    "album": "Kaadhal Solla Vandhen (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_6",
+    "title": "Pesa Vanthen",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_6.jpg",
+    "audioUrl": "audio_url_6.mp3",
+    "duration": 250,
+    "album": "Manmadhan (Original Motion Picture Soundtrack) - Bonus Tr..."
+  },
+  {
+    "id": "song_7",
+    "title": "Kadal Raasa Naan",
+    "artist": "A.R. Rahman, Yuvan Shankar Raja",
+    "img": "image_url_7.jpg",
+    "audioUrl": "audio_url_7.mp3",
+    "duration": 250,
+    "album": "Maryan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_8",
+    "title": "Engeyo Paartha",
+    "artist": "Yuvan Shankar Raja, Udit Narayan, Na.Muthukumar",
+    "img": "image_url_8.jpg",
+    "audioUrl": "audio_url_8.mp3",
+    "duration": 250,
+    "album": "Yaaradi Nee Mohini(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_9",
+    "title": "Oh Baby",
+    "artist": "Yuvan Shankar Raja, Naveen, Bhargavi Pillai, Haricharan, Andrea Jeremiah",
+    "img": "image_url_9.jpg",
+    "audioUrl": "audio_url_9.mp3",
+    "duration": 250,
+    "album": "Yaaradi Nee Mohini(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_10",
+    "title": "Venmegam",
+    "artist": "Yuvan Shankar Raja, Hariharan, Na.Muthukumar",
+    "img": "image_url_10.jpg",
+    "audioUrl": "audio_url_10.mp3",
+    "duration": 250,
+    "album": "Yaaradi Nee Mohini(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_11",
+    "title": "Kambathu Ponnu",
+    "artist": "Yuvan Shankar Raja, Ekadasi",
+    "img": "image_url_11.jpg",
+    "audioUrl": "audio_url_11.mp3",
+    "duration": 250,
+    "album": "Kambathu Ponnu"
+  },
+  {
+    "id": "song_12",
+    "title": "Pachchai Vanna",
+    "artist": "Yuvan Shankar Raja, Madhan Karky",
+    "img": "image_url_12.jpg",
+    "audioUrl": "audio_url_12.mp3",
+    "duration": 250,
+    "album": "Vai Raja Vai(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_13",
+    "title": "Kaadhal Vaithu",
+    "artist": "Vijay Yesudas",
+    "img": "image_url_13.jpg",
+    "audioUrl": "audio_url_13.mp3",
+    "duration": 250,
+    "album": "Deepavali(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_14",
+    "title": "Thuli Thuli",
+    "artist": "Yuvan Shankar Raja, Haricharan, Tanvi Shah, Na.Muthukumar",
+    "img": "image_url_14.jpg",
+    "audioUrl": "audio_url_14.mp3",
+    "duration": 250,
+    "album": "Paiya (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_15",
+    "title": "En Kadhal Solla",
+    "artist": "Yuvan Shankar Raja, Tanvi Shah, Na.Muthukumar",
+    "img": "image_url_15.jpg",
+    "audioUrl": "audio_url_15.mp3",
+    "duration": 250,
+    "album": "Paiya (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_16",
+    "title": "Aandipatti",
+    "artist": "Senthil Dass, Surmukhi Raman",
+    "img": "image_url_16.jpg",
+    "audioUrl": "audio_url_16.mp3",
+    "duration": 250,
+    "album": "Dharmadurai(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_17",
+    "title": "Devathaiya Kandaen",
+    "artist": "Harish Raghavendra",
+    "img": "image_url_17.jpg",
+    "audioUrl": "audio_url_17.mp3",
+    "duration": 250,
+    "album": "Kadhal Kondaen"
+  },
+  {
+    "id": "song_18",
+    "title": "Idhu Varai",
+    "artist": "Yuvan Shankar Raja, Ajesh, Andrea Jeremiah, Gangai Amaran",
+    "img": "image_url_18.jpg",
+    "audioUrl": "audio_url_18.mp3",
+    "duration": 250,
+    "album": "Goa (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_19",
+    "title": "Irava Pagala",
+    "artist": "Hariharan, Sujatha",
+    "img": "image_url_19.jpg",
+    "audioUrl": "audio_url_19.mp3",
+    "duration": 250,
+    "album": "Poovellam Kettuppar"
+  },
+  {
+    "id": "song_20",
+    "title": "Kadhal Yenbathu",
+    "artist": "Harish Raghavendra",
+    "img": "image_url_20.jpg",
+    "audioUrl": "audio_url_20.mp3",
+    "duration": 250,
+    "album": "Oru Kalluriyin Kadhai(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_21",
+    "title": "Arabu Naadu",
+    "artist": "Haricharan, Yuvan Shankar Raja",
+    "img": "image_url_21.jpg",
+    "audioUrl": "audio_url_21.mp3",
+    "duration": 250,
+    "album": "Thottal Poo Malarum"
+  },
+  {
+    "id": "song_22",
+    "title": "Pogadhe",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_22.jpg",
+    "audioUrl": "audio_url_22.mp3",
+    "duration": 250,
+    "album": "Deepavali(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_23",
+    "title": "Thappu Pannitten",
+    "artist": "Silambarasan TR",
+    "img": "image_url_23.jpg",
+    "audioUrl": "audio_url_23.mp3",
+    "duration": 250,
+    "album": "Thappu Pannitten"
+  },
+  {
+    "id": "song_24",
+    "title": "Neethane",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_24.jpg",
+    "audioUrl": "audio_url_24.mp3",
+    "duration": 250,
+    "album": "Sarvam"
+  },
+  {
+    "id": "song_25",
+    "title": "Kaatrukullai",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_25.jpg",
+    "audioUrl": "audio_url_25.mp3",
+    "duration": 250,
+    "album": "Sarvam"
+  },
+  {
+    "id": "song_26",
+    "title": "Siragugal",
+    "artist": "Yuvan Shankar Raja, Javed Ali, Madhushree",
+    "img": "image_url_26.jpg",
+    "audioUrl": "audio_url_26.mp3",
+    "duration": 250,
+    "album": "Sarvam"
+  },
+  {
+    "id": "song_27",
+    "title": "Nenja Unakaga",
+    "artist": "Haricharan, Yuvan Shankar Raja",
+    "img": "image_url_27.jpg",
+    "audioUrl": "audio_url_27.mp3",
+    "duration": 250,
+    "album": "Sindhubaadh"
+  },
+  {
+    "id": "song_28",
+    "title": "Yuvan Mashup 2k18 (Straight from Our Hearts)",
+    "artist": "Stanley Xavier, Sathya Narayanan",
+    "img": "image_url_28.jpg",
+    "audioUrl": "audio_url_28.mp3",
+    "duration": 250,
+    "album": "Yuvan Mashup 2k18 (Straight from Our Hearts)"
+  },
+  {
+    "id": "song_29",
+    "title": "Poongatre Poongatre",
+    "artist": "Yuvan Shankar Raja, Benny Dayal, Na.Muthukumar",
+    "img": "image_url_29.jpg",
+    "audioUrl": "audio_url_29.mp3",
+    "duration": 250,
+    "album": "Paiya (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_30",
+    "title": "Adada Mazhaida",
+    "artist": "Yuvan Shankar Raja, Rahul Nambiar, Saindhavi, Na.Muthukumar",
+    "img": "image_url_30.jpg",
+    "audioUrl": "audio_url_30.mp3",
+    "duration": 250,
+    "album": "Paiya (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_31",
+    "title": "Oru Naalaikkul",
+    "artist": "Yuvan Shankar Raja, Karthik, Rita Thyagarajan, Na.Muthukumar",
+    "img": "image_url_31.jpg",
+    "audioUrl": "audio_url_31.mp3",
+    "duration": 250,
+    "album": "Yaaradi Nee Mohini(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_32",
+    "title": "Pani Thuli",
+    "artist": "Yuvan Shankar Raja, KK, Shreya Ghoshal",
+    "img": "image_url_32.jpg",
+    "audioUrl": "audio_url_32.mp3",
+    "duration": 250,
+    "album": "Kanda Naal Mudhal"
+  },
+  {
+    "id": "song_33",
+    "title": "Mellasirithal Kadhalthan",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_33.jpg",
+    "audioUrl": "audio_url_33.mp3",
+    "duration": 250,
+    "album": "Aadhalal Kadhal Seiveer"
+  },
+  {
+    "id": "song_34",
+    "title": "Sudasuda Thooral",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_34.jpg",
+    "audioUrl": "audio_url_34.mp3",
+    "duration": 250,
+    "album": "Kedi Billa Killadi Ranga (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_35",
+    "title": "Yedhedo Ennangal",
+    "artist": "Yuvan Shankar Raja, Shweta Mohan, Pa. Vijay",
+    "img": "image_url_35.jpg",
+    "audioUrl": "audio_url_35.mp3",
+    "duration": 250,
+    "album": "Pattiyal(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_36",
+    "title": "Yedho Seigirai",
+    "artist": "Yuvan Shankar Raja, Javed Ali, Sowmya Raoh",
+    "img": "image_url_36.jpg",
+    "audioUrl": "audio_url_36.mp3",
+    "duration": 250,
+    "album": "Vaamanan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_37",
+    "title": "Oru Devathai",
+    "artist": "Yuvan Shankar Raja, Roop Kumar Rathod, Na.Muthukumar",
+    "img": "image_url_37.jpg",
+    "audioUrl": "audio_url_37.mp3",
+    "duration": 250,
+    "album": "Vaamanan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_38",
+    "title": "Machaan Machaan",
+    "artist": "Yuvan Shankar Raja, Ilaiyaraaja, Bela Shende, Na.Muthukumar",
+    "img": "image_url_38.jpg",
+    "audioUrl": "audio_url_38.mp3",
+    "duration": 250,
+    "album": "Silambattam (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_39",
+    "title": "Iyyayo",
+    "artist": "Manikka Vinayagam, Krishnaraj, Yuvan Shankar Raja, Shreya Ghoshal",
+    "img": "image_url_39.jpg",
+    "audioUrl": "audio_url_39.mp3",
+    "duration": 250,
+    "album": "Paruthiveeran"
+  },
+  {
+    "id": "song_40",
+    "title": "Anbae Peranbae",
+    "artist": "Yuvan Shankar Raja, Sid Sriram, Shreya Ghoshal, Uma Devi",
+    "img": "image_url_40.jpg",
+    "audioUrl": "audio_url_40.mp3",
+    "duration": 250,
+    "album": "NGK (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_41",
+    "title": "Thavani Paotta",
+    "artist": "Vijay Yesudas, Srerayakoshi, Yugabharathi, Yuvan Shankar Raja",
+    "img": "image_url_41.jpg",
+    "audioUrl": "audio_url_41.mp3",
+    "duration": 250,
+    "album": "Sandakozhi(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_42",
+    "title": "Kadhal Aasai",
+    "artist": "Yuvan Shankar Raja, Sooraj Santhosh, Kabilan",
+    "img": "image_url_42.jpg",
+    "audioUrl": "audio_url_42.mp3",
+    "duration": 250,
+    "album": "Anjaan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_43",
+    "title": "Oh Senyareeta",
+    "artist": "Unnikrishnan",
+    "img": "image_url_43.jpg",
+    "audioUrl": "audio_url_43.mp3",
+    "duration": 250,
+    "album": "Poovellam Kettuppar"
+  },
+  {
+    "id": "song_44",
+    "title": "Endha Pakkam",
+    "artist": "Radhul Nambiar, Chinmayi",
+    "img": "image_url_44.jpg",
+    "audioUrl": "audio_url_44.mp3",
+    "duration": 250,
+    "album": "Dharmadurai(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_45",
+    "title": "Yaaro - Duet Version",
+    "artist": "S. P. Balasubrahmanyam, K. S. Chithra",
+    "img": "image_url_45.jpg",
+    "audioUrl": "audio_url_45.mp3",
+    "duration": 250,
+    "album": "Chennai-600028(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_46",
+    "title": "Maari's Aanandhi",
+    "artist": "Ilaiyaraaja, M. M. Manasi",
+    "img": "image_url_46.jpg",
+    "audioUrl": "audio_url_46.mp3",
+    "duration": 250,
+    "album": "Maari 2(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_47",
+    "title": "Kannan Varum Velai",
+    "artist": "Anuradha Sriram, Madhushree",
+    "img": "image_url_47.jpg",
+    "audioUrl": "audio_url_47.mp3",
+    "duration": 250,
+    "album": "Deepavali(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_48",
+    "title": "Pesugireen",
+    "artist": "Neha Bhasin",
+    "img": "image_url_48.jpg",
+    "audioUrl": "audio_url_48.mp3",
+    "duration": 250,
+    "album": "Satham Podathey (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_49",
+    "title": "Yaar Intha",
+    "artist": "Haricharan",
+    "img": "image_url_49.jpg",
+    "audioUrl": "audio_url_49.mp3",
+    "duration": 250,
+    "album": "Boss n' Baskaran (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_50",
+    "title": "Mun Paniya",
+    "artist": "S. P. Balasubrahmanyam, Malgudi Subha, Palani Bharathi",
+    "img": "image_url_50.jpg",
+    "audioUrl": "audio_url_50.mp3",
+    "duration": 250,
+    "album": "Nandha (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_51",
+    "title": "Kanaa Kaanum",
+    "artist": "Yuvan Shankar Raja, Na.Muthukumar",
+    "img": "image_url_51.jpg",
+    "audioUrl": "audio_url_51.mp3",
+    "duration": 250,
+    "album": "7/G Rainbow Colony (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_52",
+    "title": "Merke Merke",
+    "artist": "Yuvan Shankar Raja, Sadhana Sargam, Shankar Mahadevan",
+    "img": "image_url_52.jpg",
+    "audioUrl": "audio_url_52.mp3",
+    "duration": 250,
+    "album": "Kanda Naal Mudhal"
+  },
+  {
+    "id": "song_53",
+    "title": "High On Love",
+    "artist": "Yuvan Shankar Raja, Sid Sriram",
+    "img": "image_url_53.jpg",
+    "audioUrl": "audio_url_53.mp3",
+    "duration": 250,
+    "album": "Pyaar Prema Kaadhal(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_54",
+    "title": "Hold Me Now",
+    "artist": "Yuvan Shankar Raja, Sanjith Hegde, Thurga",
+    "img": "image_url_54.jpg",
+    "audioUrl": "audio_url_54.mp3",
+    "duration": 250,
+    "album": "Pyaar Prema Kaadhal(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_55",
+    "title": "Sol Pechu",
+    "artist": "Yuvan Shankar Raja, K. S. Chithra, Shreya Ghoshal",
+    "img": "image_url_55.jpg",
+    "audioUrl": "audio_url_55.mp3",
+    "duration": 250,
+    "album": "Thillalangadi(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_56",
+    "title": "En Fuse Pochu",
+    "artist": "Yuvan Shankar Raja, Karthik, Ramya NSK",
+    "img": "image_url_56.jpg",
+    "audioUrl": "audio_url_56.mp3",
+    "duration": 250,
+    "album": "Arrambam (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_57",
+    "title": "Eno Kangal",
+    "artist": "Yuvan Shankar Raja, Sadhana Sargam",
+    "img": "image_url_57.jpg",
+    "audioUrl": "audio_url_57.mp3",
+    "duration": 250,
+    "album": "Kalvanin Kadhali"
+  },
+  {
+    "id": "song_58",
+    "title": "Idhu Kaadhala",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_58.jpg",
+    "audioUrl": "audio_url_58.mp3",
+    "duration": 250,
+    "album": "Thulluvadho Ilamai"
+  },
+  {
+    "id": "song_59",
+    "title": "Ottraikkannale",
+    "artist": "Yuvan Shankar Raja, Haricharan, Suchitra",
+    "img": "image_url_59.jpg",
+    "audioUrl": "audio_url_59.mp3",
+    "duration": 250,
+    "album": "Vel(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_60",
+    "title": "Rasathi",
+    "artist": "Yuvan Shankar Raja, Haricharan",
+    "img": "image_url_60.jpg",
+    "audioUrl": "audio_url_60.mp3",
+    "duration": 250,
+    "album": "Avan Ivan (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_61",
+    "title": "Tajmahal Oviyakkadhal",
+    "artist": "Yuvan Shankar Raja, Madhumitha, Vijay Yesudas",
+    "img": "image_url_61.jpg",
+    "audioUrl": "audio_url_61.mp3",
+    "duration": 250,
+    "album": "Kalvanin Kadhali"
+  },
+  {
+    "id": "song_62",
+    "title": "Unnakaagathane Intheuiryirullathu",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_62.jpg",
+    "audioUrl": "audio_url_62.mp3",
+    "duration": 250,
+    "album": "Tamil M.A."
+  },
+  {
+    "id": "song_63",
+    "title": "Oru Vaanavillin Pakkathile",
+    "artist": "Udit Narayan",
+    "img": "image_url_63.jpg",
+    "audioUrl": "audio_url_63.mp3",
+    "duration": 250,
+    "album": "Kaadhal Solla Vandhen (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_64",
+    "title": "Idhayathai Oru Nodi",
+    "artist": "Yuvan Shankar Raja",
+    "img": "image_url_64.jpg",
+    "audioUrl": "audio_url_64.mp3",
+    "duration": 250,
+    "album": "Semma Botha Aagathey (Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_65",
+    "title": "Vellai Maiyil",
+    "artist": "Yuvan Shankar Raja, Udit Narayan, Shweta Mohan",
+    "img": "image_url_65.jpg",
+    "audioUrl": "audio_url_65.mp3",
+    "duration": 250,
+    "album": "Samar(Original Motion Picture Soundtrack)"
+  },
+  {
+    "id": "song_66",
+    "title": "Loosu Pennee",
+    "artist": "Silambarasan TR, Blaaze",
+    "img": "image_url_66.jpg",
+    "audioUrl": "audio_url_66.mp3",
+    "duration": 250,
+    "album": "Vallavan (Original Motion Picture Soundtrack)"
+  }
+]

@@ -1,0 +1,72 @@
+.hero-card-container {
+  padding: 0 var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.hero-card {
+  background: var(--bg-color);
+  border-radius: var(--radius-lg);
+  padding: 30px var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-color);
+  box-shadow: var(--neu-shadow-out);
+}
+
+.hero-content {
+  flex: 1;
+  padding-right: var(--spacing-md);
+}
+
+.hero-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  letter-spacing: -0.5px;
+}
+
+.hero-subtitle {
+  font-size: 13px;
+  color: #a0a0a0;
+  line-height: 1.4;
+}
+
+.hero-icon {
+  width: 54px;
+  height: 54px;
+  background: url("/icon.png") no-repeat center;
+  background-size: cover;
+  border-radius: var(--radius-pill, 50px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow:
+    0px 6px 0px #333534,
+    0px 8px 15px rgba(0, 0, 0, 0.4),
+    inset 0px 2px 0px rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transform: translateY(0);
+}
+
+.hero-icon:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0px 8px 0px #536058,
+    0px 12px 20px rgba(0, 0, 0, 0.5),
+    inset 0px 2px 0px rgba(255, 255, 255, 0.4);
+  background-image: linear-gradient(145deg, rgba(58, 63, 60, 0.8), rgba(0, 0, 0, 0.8)), url("/icon.png");
+}
+
+.hero-icon:active {
+  transform: translateY(4px);
+  box-shadow:
+    0px 2px 0px #12803b,
+    0px 4px 10px rgba(0, 0, 0, 0.3),
+    inset 0px 1px 0px rgba(255, 255, 255, 0.2);
+  /* Active state: slightly darker/more opaque green gradient stacked over the image */
+  background-image: linear-gradient(145deg, rgba(251, 251, 251, 0.9), rgba(0, 0, 0, 0.9)), url("/icon.png");
+}

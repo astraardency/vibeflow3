@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "211660575500",
+    "project_id": "vibeflow-f5cfc",
+    "storage_bucket": "vibeflow-f5cfc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:211660575500:android:23789d50edc737099e2f29",
+        "android_client_info": {
+          "package_name": "com.astraardency.vibeflow"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "211660575500-ksdndm646aqelk8e1ascmnljai43e82f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.astraardency.vibeflow",
+            "certificate_hash": "5e7451ad30bf44d59d84d2661c266291deaec84d"
+          }
+        },
+        {
+          "client_id": "211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwnDNW7Jkv99PFgGTx5VeOS05__vbApGs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

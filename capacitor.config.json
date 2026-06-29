@@ -1,0 +1,12 @@
+{
+  "appId": "com.astraardency.vibeflow",
+  "appName": "Vibeflow",
+  "webDir": "dist",
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}

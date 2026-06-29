@@ -1,0 +1,184 @@
+.musical-galaxy-wrapper {
+  margin: 0 auto;
+  max-width: 700px;
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.galaxy-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.galaxy-header .section-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+  color: #121212;
+}
+
+.galaxy-header .galaxy-subtitle {
+  font-size: 13px;
+  color: #6b6b6b;
+}
+
+.galaxy-interactive-area {
+  position: relative;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: pan-y; /* Allow vertical scroll but capture horizontal swipe */
+  cursor: grab;
+}
+
+.galaxy-interactive-area:active {
+  cursor: grabbing;
+}
+
+/* 
+  The rotating orbit ring 
+  Will spin based on React state (inline styles)
+*/
+.galaxy-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  /* transition helps smooth out small drag jumps and hover pauses */
+  /* transition: transform 0.1s ease-out; */ 
+}
+
+/* Center Planet */
+.galaxy-center-planet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  margin-top: -30px;
+  margin-left: -30px;
+  background-color: #2e1065;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 10px 20px rgba(46, 16, 101, 0.4);
+  z-index: 10;
+}
+
+/* Orbiting Planets */
+.galaxy-planet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin-top: -32px;
+  margin-left: -32px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 5;
+  background-color: white;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* glow is applied via inline style */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.galaxy-planet img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none; /* Prevent native image drag */
+}
+
+/* Float animation for the planets to make them feel organic */
+.galaxy-planet {
+  animation: float-planet 4s ease-in-out infinite alternate;
+}
+
+/* Offset animation delay slightly for each child to randomize floating */
+.galaxy-planet:nth-child(even) {
+  animation-delay: 1s;
+}
+
+.galaxy-planet:nth-child(3n) {
+  animation-delay: 2s;
+}
+
+.galaxy-planet:hover {
+  /* We use !important because inline styles define the main transform for orbit */
+  /* Instead of !important, we just scale the inner image wrapper or use filter */
+  filter: brightness(1.1);
+  z-index: 100;
+}
+
+.galaxy-planet:hover img {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.planet-label {
+  position: absolute;
+  bottom: -24px;
+  background-color: rgba(20, 20, 20, 0.85);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(-5px);
+  backdrop-filter: blur(4px);
+}
+
+.galaxy-planet:hover .planet-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes float-planet {
+  0% { top: 48%; }
+  100% { top: 52%; }
+}
+
+/* Popup message card */
+.galaxy-popup {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20, 20, 20, 0.9);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  z-index: 50;
+  white-space: nowrap;
+}
+
+.galaxy-popup.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}

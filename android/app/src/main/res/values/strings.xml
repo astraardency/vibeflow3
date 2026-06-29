@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vibeflow</string>
+    <string name="title_activity_main">Vibeflow</string>
+    <string name="package_name">com.astraardency.vibeflow</string>
+    <string name="custom_url_scheme">com.astraardency.vibeflow</string>
+    <string name="server_client_id">211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com</string>
+</resources>
