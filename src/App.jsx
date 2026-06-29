@@ -4479,6 +4479,10 @@ function App() {
                 <button className="fullscreen-icon-btn" onClick={() => setIsDeviceModalOpen(true)}>
                   <MonitorSpeaker size={22} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
                 </button>
+                
+                <button className="fullscreen-icon-btn" onClick={() => setIsLiveConnectOpen(true)} title="Live Connect">
+                  <Radio size={22} color={isLiveConnected ? 'var(--card-orange, #f5954a)' : 'white'} />
+                </button>
 
                 <button className="fullscreen-icon-btn" onClick={playPreviousSong}>
                   <SkipForward size={24} style={{ transform: 'rotate(180deg)' }} />
