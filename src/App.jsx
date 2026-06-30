@@ -96,7 +96,7 @@ function App() {
   }, []);
 
   // Global States
-  const { activeDeviceId, isLocalDeviceActive, isDeviceModalOpen, setIsDeviceModalOpen, remotePlaybackState, sendCommand, incomingCommand, broadcastState } = useDeviceConnect();
+  const { activeDeviceId, isLocalDeviceActive, isDeviceModalOpen, setIsDeviceModalOpen, remotePlaybackState, sendCommand, incomingCommand, setIncomingCommand, broadcastState } = useDeviceConnect();
   const [toastMessage, setToastMessage] = useState('')
   const [showToast, setShowToast] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
@@ -811,7 +811,27 @@ function App() {
 
   useEffect(() => {
     if (activePlaybackQueue && activePlaybackQueue.length > 0) {
-      localStorage.setItem('lastPlaybackQueue', JSON.stringify(activePlaybackQueue));
+      try {
+        // Limit to 50 songs and strip large audio URL fields to stay well under
+        // the 5 MB localStorage quota. Audio URLs are re-fetched at play time.
+        const queueToSave = activePlaybackQueue.slice(0, 50).map(t => ({
+          id: t.id,
+          title: t.title,
+          artist: t.artist,
+          img: t.img,
+          duration: t.duration,
+          language: t.language,
+          genre: t.genre,
+          // keep audioUrl only if it looks like a real local/downloaded file
+          audioUrl: t.audioUrl && (t.audioUrl.startsWith('file://') || t.audioUrl.startsWith('blob:'))
+            ? t.audioUrl
+            : undefined,
+        }));
+        localStorage.setItem('lastPlaybackQueue', JSON.stringify(queueToSave));
+      } catch (e) {
+        // QuotaExceededError — storage is full; silently skip persisting the queue
+        console.warn('Could not persist playback queue to localStorage:', e.message);
+      }
     }
   }, [activePlaybackQueue]);
 
@@ -847,6 +867,12 @@ function App() {
 
   // Audio Ref
   const audioRef = useRef(null)
+
+  // Always-current ref for currentTrack — prevents stale closures in async callbacks
+  const currentTrackRef = useRef(currentTrack);
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
 
   // Equalizer States
   const [showEqModal, setShowEqModal] = useState(false)
@@ -1607,6 +1633,17 @@ function App() {
       if (trackToPlay.duration) {
         setDuration(parseInt(trackToPlay.duration, 10) || 0)
       }
+
+      // Update audio source and play
+      // If a remote device is active, just send the command — do NOT count local stats
+      if (!isLocalDeviceActive) {
+        sendCommand('transfer_playback', { track: trackToPlay, time: 0 });
+        setIsPlaying(true);
+        setIsLoadingSong(false);
+        return;
+      }
+
+      // Only increment stats when this device is actually playing locally
       setPlaysCount(prev => prev + 1)
       setDailyPlays(prev => {
         const newDaily = [...prev];
@@ -1630,14 +1667,6 @@ function App() {
         localStorage.setItem('listening_activity', JSON.stringify(updated))
         return updated
       })
-
-      // Update audio source and play
-      if (!isLocalDeviceActive) {
-        sendCommand('transfer_playback', { track: trackToPlay, time: 0 });
-        setIsPlaying(true);
-        setIsLoadingSong(false);
-        return;
-      }
 
       if (Capacitor.isNativePlatform()) {
         NativeAudio.play({
@@ -1803,22 +1832,25 @@ function App() {
 
   const onAudioError = async (e) => {
     console.error("Audio playback error:", e.target.error);
-    if (!currentTrack) return;
+    // Use ref to always read the latest currentTrack, not the stale closure value
+    const track = currentTrackRef.current;
+    if (!track) return;
 
     // If the stream is a JioSaavn URL and failed to load (e.g. 403 Expired), try refreshing it!
-    if (currentTrack.audioUrl && currentTrack.audioUrl.includes('saavncdn.com') && !currentTrack._isRefreshed) {
+    if (track.audioUrl && track.audioUrl.includes('saavncdn.com') && !track._isRefreshed) {
       triggerToast("Refreshing expired stream...");
       // Fetch fresh details using ID (or search if ID is dummy)
       let playableResult;
-      if (currentTrack.id && typeof currentTrack.id === 'string' && currentTrack.id.length > 5) {
-        playableResult = await getSongDetails(currentTrack.id);
+      if (track.id && typeof track.id === 'string' && track.id.length > 5) {
+        playableResult = await getSongDetails(track.id);
       } else {
-        playableResult = await getPlayableStreamForSong(currentTrack);
+        playableResult = await getPlayableStreamForSong(track);
       }
 
       if (playableResult && playableResult.audioUrl) {
-        const updatedTrack = { ...currentTrack, audioUrl: playableResult.audioUrl, _isRefreshed: true };
+        const updatedTrack = { ...track, audioUrl: playableResult.audioUrl, _isRefreshed: true };
         setCurrentTrack(updatedTrack);
+        currentTrackRef.current = updatedTrack; // keep ref in sync immediately
 
         // update queue
         setActivePlaybackQueue(prev => prev.map(t => (t.id === updatedTrack.id || t.title === updatedTrack.title) ? updatedTrack : t));
@@ -2095,6 +2127,24 @@ function App() {
     return `-${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
 
+  // Virtual timer for remote control mode so the progress bar moves
+  // Since we don't broadcast continuous time updates over Firebase (to save quota),
+  // we just simulate the timer ticking forward locally when acting as a remote.
+  useEffect(() => {
+    let timer = null;
+    if (!isLocalDeviceActive && isPlaying && !isDraggingSlider) {
+      timer = setInterval(() => {
+        setCurrentTime(prev => {
+          if (prev >= duration && duration > 0) return prev;
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    }
+  }, [isLocalDeviceActive, isPlaying, isDraggingSlider, duration]);
+
   // Handle progress slider change
   const handleProgressChange = (e) => {
     const newTime = parseFloat(e.target.value)
@@ -2104,6 +2154,14 @@ function App() {
   const handleProgressChangeComplete = (e) => {
     const newTime = parseFloat(e.target.value)
     setIsDraggingSlider(false)
+
+    // If a remote device is active, send a seek command to that device instead
+    if (!isLocalDeviceActive) {
+      sendCommand('seek', { time: newTime });
+      setCurrentTime(newTime);
+      return;
+    }
+
     if (Capacitor.isNativePlatform()) {
       NativeAudio.seek({ time: newTime });
       setCurrentTime(newTime);
@@ -2187,7 +2245,21 @@ function App() {
         case 'prev':
           playPreviousSong();
           break;
+        case 'seek': {
+          const seekTime = incomingCommand.payload?.time;
+          if (seekTime !== undefined) {
+            if (Capacitor.isNativePlatform()) {
+              NativeAudio.seek({ time: seekTime });
+            } else if (audioRef.current) {
+              audioRef.current.currentTime = seekTime;
+            }
+            setCurrentTime(seekTime);
+          }
+          break;
+        }
       }
+      // Clear the command so it doesn't re-fire on re-renders
+      setIncomingCommand(null);
     }
   }, [incomingCommand, isLocalDeviceActive]);
 
