@@ -102,7 +102,8 @@ function App() {
     listeningActivity: null,
     playsCount: null,
     isDarkMode: null,
-    artistPlays: null
+    artistPlays: null,
+    savedPlaylistIds: null
   });
 
   // Live Connect States — real-time cross-device playback sync
@@ -449,6 +450,10 @@ function App() {
               setArtistPlays(data.artistPlays || {});
               lastRemoteState.current.artistPlays = data.artistPlays;
             }
+            if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
+              setSavedPlaylistIds(data.savedPlaylistIds || []);
+              lastRemoteState.current.savedPlaylistIds = data.savedPlaylistIds;
+            }
           }
         }, (error) => {
           console.error("Error fetching user data in real-time:", error);
@@ -732,12 +737,17 @@ function App() {
         changes.artistPlays = artistPlays;
         lastRemoteState.current.artistPlays = artistPlays;
       }
+      if (JSON.stringify(savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
+        changes.savedPlaylistIds = savedPlaylistIds;
+        lastRemoteState.current.savedPlaylistIds = savedPlaylistIds;
+        localStorage.setItem('savedPlaylistIds', JSON.stringify(savedPlaylistIds));
+      }
 
       if (Object.keys(changes).length > 0) {
         updateDoc(doc(db, 'users', activeUid), changes).catch(err => console.error("Error syncing data:", err));
       }
     }
-  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, currentUser, isUserDataLoaded]);
+  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('')

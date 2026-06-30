@@ -22,12 +22,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
   const [isSearchingPlaylistSongs, setIsSearchingPlaylistSongs] = useState(false);
   const [showAllComposers, setShowAllComposers] = useState(false);
 
-  const [savedPlaylistIds, setSavedPlaylistIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('savedPlaylists');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const { savedPlaylistIds, setSavedPlaylistIds } = useAuth();
 
   const handleShare = (type, data, e) => {
     if (e) e.stopPropagation();

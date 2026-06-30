@@ -21,17 +21,9 @@ const HomeContainer = ({
   isLoadingArtistSongs 
 }) => {
   const { setActiveTab, triggerToast } = useAppContext();
-  const { likedSongs, toggleLike, listeningActivity } = useAuth();
+  const { likedSongs, toggleLike, listeningActivity, savedPlaylistIds } = useAuth();
   const { currentTrack, isPlaying, playSong, activePlaybackQueue, setIsShuffleMode, setActivePlaybackQueue, setCurrentTrackIndex } = usePlayer();
   const { playlists, setSelectedPlaylist } = usePlaylists();
-
-  // Parse saved playlist IDs from local storage since it's not in contexts yet
-  const [savedPlaylistIds, setSavedPlaylistIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('savedPlaylistIds')
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  });
 
   const shuffleQueue = (queue) => {
     if (!queue || queue.length === 0) return

@@ -38,12 +38,21 @@ export const AuthProvider = ({ children }) => {
     return localStorage.getItem('theme') === 'dark'
   });
 
+  const [savedPlaylistIds, setSavedPlaylistIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savedPlaylistIds')
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
+  });
+
   const lastRemoteState = useRef({
     likedSongs: null,
     listeningActivity: null,
     playsCount: null,
     isDarkMode: null,
-    artistPlays: null
+    artistPlays: null,
+    savedPlaylistIds: null
   });
 
   useEffect(() => {
@@ -76,6 +85,10 @@ export const AuthProvider = ({ children }) => {
             if (JSON.stringify(data.artistPlays) !== JSON.stringify(lastRemoteState.current.artistPlays)) {
               setArtistPlays(data.artistPlays || {});
               lastRemoteState.current.artistPlays = data.artistPlays;
+            }
+            if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
+              setSavedPlaylistIds(data.savedPlaylistIds || []);
+              lastRemoteState.current.savedPlaylistIds = data.savedPlaylistIds;
             }
           }
         }, (error) => {
@@ -121,12 +134,17 @@ export const AuthProvider = ({ children }) => {
         changes.artistPlays = artistPlays;
         lastRemoteState.current.artistPlays = artistPlays;
       }
+      if (JSON.stringify(savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
+        changes.savedPlaylistIds = savedPlaylistIds;
+        lastRemoteState.current.savedPlaylistIds = savedPlaylistIds;
+        localStorage.setItem('savedPlaylistIds', JSON.stringify(savedPlaylistIds));
+      }
 
       if (Object.keys(changes).length > 0) {
         updateDoc(doc(db, 'users', activeUid), changes).catch(err => console.error("Error syncing data:", err));
       }
     }
-  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, currentUser, isUserDataLoaded]);
+  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);
 
   // Sync theme variables
   useEffect(() => {
@@ -185,6 +203,8 @@ export const AuthProvider = ({ children }) => {
     setArtistPlays,
     isDarkMode,
     setIsDarkMode,
+    savedPlaylistIds,
+    setSavedPlaylistIds,
     toggleLike
   };
 

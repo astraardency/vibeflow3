@@ -11,6 +11,7 @@ const SearchContainer = () => {
   const { triggerToast } = useAppContext();
   const { playlists, setPlaylists } = usePlaylists();
   const { currentTrack, isPlaying, playSong, setIsShuffleMode } = usePlayer();
+  const { savedPlaylistIds, setSavedPlaylistIds } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -19,14 +20,6 @@ const SearchContainer = () => {
   
   const [selectedSaavnPlaylist, setSelectedSaavnPlaylist] = useState(null);
   const [isLoadingSaavnPlaylist, setIsLoadingSaavnPlaylist] = useState(false);
-
-  // Parse saved playlist IDs from local storage (Phase 3 will integrate this better)
-  const [savedPlaylistIds, setSavedPlaylistIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('savedPlaylistIds')
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  });
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault()
