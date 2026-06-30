@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot, getDocs, collection } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { Capacitor } from '@capacitor/core';
 
@@ -57,7 +57,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let unsubscribeUserDoc = null;
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      const tvUid = localStorage.getItem('tv_uid');
+      const user = tvUid ? { uid: tvUid, isAnonymous: false, displayName: localStorage.getItem('username'), email: localStorage.getItem('email') } : authUser;
       setCurrentUser(user);
       if (user && !user.isAnonymous) {
         localStorage.setItem('isLoggedIn', 'true');
@@ -67,8 +69,12 @@ export const AuthProvider = ({ children }) => {
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (JSON.stringify(data.likedSongs) !== JSON.stringify(lastRemoteState.current.likedSongs)) {
-              setLikedSongs(data.likedSongs || []);
-              lastRemoteState.current.likedSongs = data.likedSongs;
+              setLikedSongs(prev => {
+                const remote = data.likedSongs || [];
+                const merged = Array.from(new Set([...(prev || []), ...remote]));
+                return merged;
+              });
+              lastRemoteState.current.likedSongs = data.likedSongs || [];
             }
             if (JSON.stringify(data.listeningActivity) !== JSON.stringify(lastRemoteState.current.listeningActivity)) {
               setListeningActivity(data.listeningActivity || []);
@@ -87,8 +93,29 @@ export const AuthProvider = ({ children }) => {
               lastRemoteState.current.artistPlays = data.artistPlays;
             }
             if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
-              setSavedPlaylistIds(data.savedPlaylistIds || []);
-              lastRemoteState.current.savedPlaylistIds = data.savedPlaylistIds;
+              let fetched = data.savedPlaylistIds;
+              if (!fetched || fetched.length === 0) {
+                const creatorName = user.displayName || (user.email ? user.email.split('@')[0] : null) || localStorage.getItem('username');
+                if (creatorName) {
+                  getDocs(collection(db, 'playlists')).then(snap => {
+                    const owned = [];
+                    snap.forEach(d => {
+                      if (d.data().creator === creatorName) owned.push(d.id);
+                    });
+                    if (owned.length > 0) {
+                      setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...owned])));
+                      lastRemoteState.current.savedPlaylistIds = owned;
+                    } else {
+                      lastRemoteState.current.savedPlaylistIds = [];
+                    }
+                  }).catch(e => console.error(e));
+                } else {
+                  lastRemoteState.current.savedPlaylistIds = [];
+                }
+              } else {
+                setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...fetched])));
+                lastRemoteState.current.savedPlaylistIds = fetched;
+              }
             }
           }
         }, (error) => {
@@ -107,6 +134,18 @@ export const AuthProvider = ({ children }) => {
       unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
     };
+  }, []);
+
+  // Listen for playlist self-heal events from PlaylistContext
+  useEffect(() => {
+    const handlePlaylistIdsUpdated = (e) => {
+      const newIds = e.detail;
+      if (Array.isArray(newIds) && newIds.length > 0) {
+        setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...newIds])));
+      }
+    };
+    window.addEventListener('playlistIdsUpdated', handlePlaylistIdsUpdated);
+    return () => window.removeEventListener('playlistIdsUpdated', handlePlaylistIdsUpdated);
   }, []);
 
   // Sync user data back to Firestore when it changes locally
@@ -182,11 +221,13 @@ export const AuthProvider = ({ children }) => {
 
   const toggleLike = (songTitle, e, triggerToast) => {
     if (e) e.stopPropagation();
-    if (likedSongs.includes(songTitle)) {
-      setLikedSongs(likedSongs.filter(title => title !== songTitle));
+    if (!songTitle) return;
+    const currentLikes = Array.isArray(likedSongs) ? likedSongs : [];
+    if (currentLikes.includes(songTitle)) {
+      setLikedSongs(currentLikes.filter(title => title !== songTitle));
       if (triggerToast) triggerToast('Removed from Liked Songs');
     } else {
-      setLikedSongs([...likedSongs, songTitle]);
+      setLikedSongs([...currentLikes, songTitle]);
       if (triggerToast) triggerToast('Added to Liked Songs');
     }
   };

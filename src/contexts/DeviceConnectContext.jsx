@@ -19,7 +19,32 @@ export const DeviceConnectProvider = ({ children }) => {
 
   const [deviceName] = useState(() => {
     const isMobile = Capacitor.isNativePlatform();
-    const defaultName = isMobile ? 'Mobile App' : 'Web Player';
+    let defaultName = 'Web Player';
+    
+    if (isMobile) {
+      defaultName = 'Mobile App';
+    } else if (window.navigator && window.navigator.userAgent) {
+      const ua = window.navigator.userAgent;
+      let browser = 'Web Player';
+      if (ua.includes('Edg/')) browser = 'Edge';
+      else if (ua.includes('Chrome/')) browser = 'Chrome';
+      else if (ua.includes('Firefox/')) browser = 'Firefox';
+      else if (ua.includes('Safari/') && !ua.includes('Chrome/')) browser = 'Safari';
+      
+      let os = '';
+      if (ua.includes('Windows')) os = 'Windows';
+      else if (ua.includes('Mac OS')) os = 'Mac';
+      else if (ua.includes('Linux')) os = 'Linux';
+      else if (ua.includes('Android')) os = 'Android';
+      else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+      
+      if (os && browser !== 'Web Player') {
+        defaultName = `${browser} on ${os}`;
+      } else if (os) {
+        defaultName = `${os} Device`;
+      }
+    }
+    
     return localStorage.getItem('device_name') || defaultName;
   });
 
@@ -155,6 +180,18 @@ export const DeviceConnectProvider = ({ children }) => {
     if (!currentUser) return;
     const stateRef = doc(db, 'account_devices', currentUser.uid);
     await setDoc(stateRef, { activeDeviceId: targetDeviceId }, { merge: true });
+    
+    await updateDoc(stateRef, {
+      command: {
+        action: 'transfer_playback',
+        payload: {
+          track: remotePlaybackState.currentTrack,
+          time: remotePlaybackState.currentTime,
+          wasPlaying: remotePlaybackState.isPlaying
+        },
+        timestamp: Date.now()
+      }
+    }).catch(console.error);
   };
 
   const isLocalDeviceActive = activeDeviceId === deviceId;

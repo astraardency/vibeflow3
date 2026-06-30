@@ -6,12 +6,14 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { usePlaylists } from '../contexts/PlaylistContext';
 import { searchSongs, getPlaylistDetails } from '../services/saavn';
 import { getSongImage } from '../utils/playerUtils';
+import { db } from '../services/firebase';
+import { doc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 const SearchContainer = () => {
   const { triggerToast } = useAppContext();
   const { playlists, setPlaylists } = usePlaylists();
   const { currentTrack, isPlaying, playSong, setIsShuffleMode } = usePlayer();
-  const { savedPlaylistIds, setSavedPlaylistIds } = useAuth();
+  const { savedPlaylistIds, setSavedPlaylistIds, currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -136,18 +138,22 @@ const SearchContainer = () => {
                       let targetId;
 
                       if (!existingPl) {
+                        const currentUid = currentUser?.uid || localStorage.getItem('tv_uid') || null;
                         const newPl = {
                           id: selectedSaavnPlaylist.id || Date.now().toString(),
                           name: selectedSaavnPlaylist.title,
                           img: selectedSaavnPlaylist.img,
                           songs: selectedSaavnPlaylist.songs,
                           creator: selectedSaavnPlaylist.creator || localStorage.getItem('username') || 'Anonymous',
+                          uid: currentUid,
                           createdAt: Date.now()
                         };
                         targetId = newPl.id;
                         const updatedPlaylists = [...playlists, newPl];
                         setPlaylists(updatedPlaylists);
                         localStorage.setItem('playlists', JSON.stringify(updatedPlaylists));
+                        // Sync to Firestore so it's available across devices
+                        setDoc(doc(db, 'playlists', targetId), newPl).catch(e => console.error("Error syncing playlist:", e));
                       } else {
                         targetId = existingPl.id;
                       }
@@ -155,6 +161,13 @@ const SearchContainer = () => {
                       const newSaved = [...new Set([...savedPlaylistIds, targetId])];
                       setSavedPlaylistIds(newSaved);
                       localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
+
+                      // Sync saved ID to user's Firestore doc so all devices see it immediately
+                      const uid = currentUser?.uid || localStorage.getItem('tv_uid') || null;
+                      if (uid) {
+                        updateDoc(doc(db, 'users', uid), { savedPlaylistIds: arrayUnion(targetId) })
+                          .catch(e => console.warn('Could not sync savedPlaylistIds:', e));
+                      }
 
                       triggerToast(`Added "${selectedSaavnPlaylist.title}" to your playlists!`);
                     }}

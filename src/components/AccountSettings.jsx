@@ -139,7 +139,10 @@ const AccountSettings = ({ onClose }) => {
       });
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      const tvUid = localStorage.getItem('tv_uid');
+      const user = tvUid ? { uid: tvUid, isAnonymous: false, displayName: localStorage.getItem('username'), email: localStorage.getItem('email') } : authUser;
+
       if (user && !user.isAnonymous) {
         setIsLoggedIn(true);
         setUsername(user.displayName || (user.email ? user.email.split('@')[0] : 'User'));

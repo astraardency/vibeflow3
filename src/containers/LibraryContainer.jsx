@@ -253,56 +253,80 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
     }
     
     if (selectedPlaylist) {
-      return (
-        <div className="playlist-container">
-          <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => {
-              setSelectedPlaylist(null)
-              setPlaylistSearchQuery('')
-              setPlaylistSearchResults([])
-            }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <ArrowLeft size={22} />
-            </button>
-            <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>{selectedPlaylist.name}</h3>
-            <button
-              className="playlist-delete-btn focusable"
-              tabIndex={0}
-              onClick={() => handleDeletePlaylist(selectedPlaylist.id)}
-              style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
-            >
-              Delete Playlist
-            </button>
-          </div>
+      return (() => {
+        const username = currentUser?.displayName || localStorage.getItem('username') || '';
+        const email = currentUser?.email || localStorage.getItem('email') || '';
+        const emailName = email ? email.split('@')[0] : '';
+        const uid = currentUser?.uid || localStorage.getItem('tv_uid') || null;
+        const isCreator =
+          (uid && selectedPlaylist.uid === uid) ||
+          (username && selectedPlaylist.creator === username) ||
+          (emailName && selectedPlaylist.creator === emailName);
+        const isHost = email === 'astraardency@gmail.com';
 
-          <div className="playlist-banner" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-end', padding: '20px 0', margin: '20px 0' }}>
-            <div style={{ position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }} onClick={() => {
-              try {
-                const url = window.prompt("Enter new image URL for the playlist cover:");
-                if (url) {
-                  if (url.length > 2000) {
-                    alert("Image URL is too long! Please use a standard web link.");
-                    return;
-                  }
-                  const updatedPlaylist = { ...selectedPlaylist, img: url };
-                  setSelectedPlaylist(updatedPlaylist);
-                  const updatedPlaylists = playlists.map(p => p.id === selectedPlaylist.id ? updatedPlaylist : p);
-                  setPlaylists(updatedPlaylists);
-                  try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch(e) {}
-                  setDoc(doc(db, 'playlists', selectedPlaylist.id), { img: url }, { merge: true }).catch(e => console.warn('Sync failed:', e));
-                }
-              } catch(e) { console.error(e) }
-            }}>
-              {selectedPlaylist.img ? (
-                <img src={selectedPlaylist.img} alt={selectedPlaylist.name} style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop'; }} />
-              ) : (
-                <div style={{ width: '180px', height: '180px', background: 'linear-gradient(135deg, var(--card-orange), var(--neon-cyan))', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
-                  <ListMusic size={64} color="white" />
-                </div>
+        return (
+          <div className="playlist-container">
+            <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => {
+                setSelectedPlaylist(null)
+                setPlaylistSearchQuery('')
+                setPlaylistSearchResults([])
+              }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <ArrowLeft size={22} />
+              </button>
+              <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>{selectedPlaylist.name}</h3>
+              {(isCreator || isHost) && (
+                <button
+                  className="playlist-delete-btn focusable"
+                  tabIndex={0}
+                  onClick={() => handleDeletePlaylist(selectedPlaylist.id)}
+                  style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+                >
+                  Delete Playlist
+                </button>
               )}
-              <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                Change Cover
-              </div>
             </div>
+
+            <div className="playlist-banner" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-end', padding: '20px 0', margin: '20px 0' }}>
+              <div
+                  style={{ position: 'relative', cursor: isCreator ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}
+                  onClick={() => {
+                    if (!isCreator) {
+                      triggerToast('Only the playlist creator can change the cover.');
+                      return;
+                    }
+                    try {
+                      const url = window.prompt("Enter new image URL for the playlist cover:");
+                      if (url) {
+                        if (url.length > 2000) {
+                          alert("Image URL is too long! Please use a standard web link.");
+                          return;
+                        }
+                        const updatedPlaylist = { ...selectedPlaylist, img: url };
+                        setSelectedPlaylist(updatedPlaylist);
+                        const updatedPlaylists = playlists.map(p => p.id === selectedPlaylist.id ? updatedPlaylist : p);
+                        setPlaylists(updatedPlaylists);
+                        try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch(e) {}
+                        import('firebase/firestore').then(({ doc: fDoc, setDoc: fSetDoc }) => {
+                          fSetDoc(fDoc(db, 'playlists', selectedPlaylist.id), { img: url }, { merge: true }).catch(e => console.warn('Sync failed:', e));
+                        });
+                      }
+                    } catch(e) { console.error(e) }
+                  }}
+                >
+                  {selectedPlaylist.img ? (
+                    <img src={selectedPlaylist.img} alt={selectedPlaylist.name} style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop'; }} />
+                  ) : (
+                    <div style={{ width: '180px', height: '180px', background: 'linear-gradient(135deg, var(--card-orange), var(--neon-cyan))', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+                      <ListMusic size={64} color="white" />
+                    </div>
+                  )}
+                  {isCreator && (
+                    <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Change Cover
+                    </div>
+                  )}
+                </div>
 
             <div className="playlist-banner-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: '1 1 200px' }}>
               <span className="playlist-badge" style={{ marginBottom: '8px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', color: 'var(--text-secondary)' }}>COMMUNITY PLAYLIST</span>
@@ -360,14 +384,17 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                       <div className="playlist-song-artist">{song.artist}</div>
                     </div>
                   </div>
-                  <button className="remove-song-btn focusable" tabIndex={0} onClick={(e) => { e.stopPropagation(); removeSongFromPlaylist(selectedPlaylist.id, song.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}>Remove</button>
+                  {isCreator && (
+                    <button className="remove-song-btn focusable" tabIndex={0} onClick={(e) => { e.stopPropagation(); removeSongFromPlaylist(selectedPlaylist.id, song.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}>Remove</button>
+                  )}
                 </div>
               ))
             )}
           </div>
 
-          <div className="playlist-add-songs-section">
-            <h3 className="section-title">Add Songs</h3>
+          {isCreator && (
+            <div className="playlist-add-songs-section">
+              <h3 className="section-title">Add Songs</h3>
             <form onSubmit={handlePlaylistSearch} className="search-form" style={{ marginBottom: '15px' }}>
               <div className="search-input-wrapper">
                 <Search size={18} className="search-box-icon" />
@@ -399,8 +426,10 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
               })}
             </div>
           </div>
+          )}
         </div>
       );
+      })();
     }
 
     return (

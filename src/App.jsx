@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where, getDocs } from 'firebase/firestore'
+import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from './services/firebase'
 import Header from './components/Header'
@@ -30,6 +30,13 @@ import './App.css'
 
 const NativeAudio = registerPlugin('NativeAudio');
 const WidgetPlugin = registerPlugin('WidgetPlugin');
+
+// Safe cross-device sync: adds a playlist ID to user doc without overwriting other saved IDs
+const arrayUnionUpdateUserDoc = (uid, playlistId) => {
+  if (!uid || !playlistId) return;
+  updateDoc(doc(db, 'users', uid), { savedPlaylistIds: arrayUnion(playlistId) })
+    .catch(e => console.warn('Could not sync savedPlaylistIds to user doc:', e));
+};
 
 function App() {
   const [showSplash, setShowSplash] = useState(true)
@@ -89,7 +96,7 @@ function App() {
   }, []);
 
   // Global States
-  const { activeDeviceId, isLocalDeviceActive, setIsDeviceModalOpen, remotePlaybackState } = useDeviceConnect();
+  const { activeDeviceId, isLocalDeviceActive, isDeviceModalOpen, setIsDeviceModalOpen, remotePlaybackState, sendCommand, incomingCommand, broadcastState } = useDeviceConnect();
   const [toastMessage, setToastMessage] = useState('')
   const [showToast, setShowToast] = useState(false)
   const [activeTab, setActiveTab] = useState('home')
@@ -141,6 +148,18 @@ function App() {
       return () => clearInterval(checkAudio);
     }
   }, []);
+
+  // Pause local audio immediately when another device takes over
+  useEffect(() => {
+    if (!isLocalDeviceActive) {
+      if (Capacitor.isNativePlatform()) {
+        NativeAudio.pause().catch(() => {});
+      } else if (audioRef && audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+  }, [isLocalDeviceActive]);
   const [isDesktopFullscreenOpen, setIsDesktopFullscreenOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoadingSong, setIsLoadingSong] = useState(false)
@@ -418,7 +437,7 @@ function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
       // Check for TV Login override
       const tvUid = localStorage.getItem('tv_uid');
-      const user = tvUid ? { uid: tvUid, isAnonymous: false } : authUser;
+      const user = tvUid ? { uid: tvUid, isAnonymous: false, displayName: localStorage.getItem('username'), email: localStorage.getItem('email') } : authUser;
 
       setCurrentUser(user);
       if (user && !user.isAnonymous) {
@@ -431,8 +450,12 @@ function App() {
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (JSON.stringify(data.likedSongs) !== JSON.stringify(lastRemoteState.current.likedSongs)) {
-              setLikedSongs(data.likedSongs || []);
-              lastRemoteState.current.likedSongs = data.likedSongs;
+              setLikedSongs(prev => {
+                const remote = data.likedSongs || [];
+                const merged = Array.from(new Set([...(prev || []), ...remote]));
+                return merged;
+              });
+              lastRemoteState.current.likedSongs = data.likedSongs || [];
             }
             if (JSON.stringify(data.listeningActivity) !== JSON.stringify(lastRemoteState.current.listeningActivity)) {
               setListeningActivity(data.listeningActivity || []);
@@ -451,8 +474,29 @@ function App() {
               lastRemoteState.current.artistPlays = data.artistPlays;
             }
             if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
-              setSavedPlaylistIds(data.savedPlaylistIds || []);
-              lastRemoteState.current.savedPlaylistIds = data.savedPlaylistIds;
+              let fetched = data.savedPlaylistIds;
+              if (!fetched || fetched.length === 0) {
+                const creatorName = user.displayName || (user.email ? user.email.split('@')[0] : null) || localStorage.getItem('username');
+                if (creatorName) {
+                  getDocs(collection(db, 'playlists')).then(snap => {
+                    const owned = [];
+                    snap.forEach(d => {
+                      if (d.data().creator === creatorName) owned.push(d.id);
+                    });
+                    if (owned.length > 0) {
+                      setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...owned])));
+                      lastRemoteState.current.savedPlaylistIds = owned;
+                    } else {
+                      lastRemoteState.current.savedPlaylistIds = [];
+                    }
+                  }).catch(e => console.error(e));
+                } else {
+                  lastRemoteState.current.savedPlaylistIds = [];
+                }
+              } else {
+                setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...fetched])));
+                lastRemoteState.current.savedPlaylistIds = fetched;
+              }
             }
           }
         }, (error) => {
@@ -996,18 +1040,18 @@ function App() {
   const handleVolumeChange = (e) => {
     const val = parseFloat(e.target.value);
 
-    // Initialize processing on volume change
-    initAudioProcessing();
-
     if (audioRef.current) {
-      // Keep standard volume at max 1
       audioRef.current.volume = Math.min(val, 1);
-
-      // Use GainNode for volume > 1 or full range
-      if (gainNodeRef.current) {
-        gainNodeRef.current.gain.value = val;
-      }
     }
+    
+    // Sync all volume sliders
+    const sliders = document.querySelectorAll('input[type="range"].np-volume-slider, input[type="range"].fullscreen-volume-slider');
+    sliders.forEach(slider => {
+      if (slider !== e.target) {
+        slider.value = val;
+      }
+    });
+
     if (Capacitor.isNativePlatform() && NativeAudio && NativeAudio.setVolume) {
       NativeAudio.setVolume({ volume: val }).catch(err => console.log('Native volume error', err));
     }
@@ -1395,11 +1439,13 @@ function App() {
   // Toggle favorite/like song
   const toggleLike = (songTitle, e) => {
     if (e) e.stopPropagation();
-    if (likedSongs.includes(songTitle)) {
-      setLikedSongs(likedSongs.filter(title => title !== songTitle))
+    if (!songTitle) return;
+    const currentLikes = Array.isArray(likedSongs) ? likedSongs : [];
+    if (currentLikes.includes(songTitle)) {
+      setLikedSongs(currentLikes.filter(title => title !== songTitle))
       triggerToast('Removed from Liked Songs')
     } else {
-      setLikedSongs([...likedSongs, songTitle])
+      setLikedSongs([...currentLikes, songTitle])
       triggerToast('Added to Liked Songs')
     }
   }
@@ -1586,6 +1632,13 @@ function App() {
       })
 
       // Update audio source and play
+      if (!isLocalDeviceActive) {
+        sendCommand('transfer_playback', { track: trackToPlay, time: 0 });
+        setIsPlaying(true);
+        setIsLoadingSong(false);
+        return;
+      }
+
       if (Capacitor.isNativePlatform()) {
         NativeAudio.play({
           url: trackToPlay.audioUrl,
@@ -1640,6 +1693,11 @@ function App() {
     if (!currentTrack) {
       playSong((window.defaultSongs || [])[0])
       return
+    }
+
+    if (!isLocalDeviceActive) {
+      sendCommand(remotePlaybackState?.isPlaying ? 'pause' : 'play');
+      return;
     }
 
     if (Capacitor.isNativePlatform()) {
@@ -1809,6 +1867,7 @@ function App() {
       img: newPlaylistImg.trim() || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop',
       songs: [],
       creator: creator,
+      uid: currentUser?.uid || localStorage.getItem('tv_uid') || null,
       createdAt: Date.now()
     }
 
@@ -2099,6 +2158,45 @@ function App() {
     // Do NOT pass list as queueToUse — that would reset the queue on every skip.
     playSong(list[prevIndex], prevIndex)
   }
+
+  // Handle incoming remote commands
+  useEffect(() => {
+    if (isLocalDeviceActive && incomingCommand) {
+      console.log('Received remote command:', incomingCommand);
+      switch (incomingCommand.action) {
+        case 'transfer_playback':
+          if (incomingCommand.payload?.track) {
+            playSong(incomingCommand.payload.track).then(() => {
+              if (incomingCommand.payload.time) {
+                if (!Capacitor.isNativePlatform() && audioRef.current) {
+                  audioRef.current.currentTime = incomingCommand.payload.time;
+                }
+              }
+            });
+          }
+          break;
+        case 'play':
+          if (!isPlaying) togglePlay();
+          break;
+        case 'pause':
+          if (isPlaying) togglePlay();
+          break;
+        case 'next':
+          playNextSong();
+          break;
+        case 'prev':
+          playPreviousSong();
+          break;
+      }
+    }
+  }, [incomingCommand, isLocalDeviceActive]);
+
+  // Broadcast state for device connect when modal opens or track/play state changes
+  useEffect(() => {
+    if (isLocalDeviceActive && currentTrack && broadcastState) {
+      broadcastState(isPlaying, currentTrack, currentTime);
+    }
+  }, [isDeviceModalOpen, currentTrack?.id, isPlaying, isLocalDeviceActive]);
 
   const toggleShuffleMode = () => {
     if (!currentTrack) return;
@@ -2897,6 +2995,7 @@ function App() {
                                 img: selectedSaavnPlaylist.img,
                                 songs: selectedSaavnPlaylist.songs,
                                 creator: selectedSaavnPlaylist.creator || currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : null) || localStorage.getItem('username') || 'Anonymous',
+                                uid: currentUser?.uid || localStorage.getItem('tv_uid') || null,
                                 createdAt: Date.now()
                               };
                               targetId = newPl.id;
@@ -2910,6 +3009,11 @@ function App() {
                             const newSaved = [...new Set([...savedPlaylistIds, targetId])];
                             setSavedPlaylistIds(newSaved);
                             localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
+
+                            // Sync to Firestore user doc using arrayUnion — safe for cross-device sync
+                            if (currentUser?.uid) {
+                              arrayUnionUpdateUserDoc(currentUser.uid, targetId);
+                            }
 
                             triggerToast(`Added "${selectedSaavnPlaylist.title}" to your playlists!`);
                           }}
@@ -3317,35 +3421,53 @@ function App() {
             </div>
           ) : selectedPlaylist ? (
             /* Custom Playlist Detail View */
-            <div className="playlist-container">
-              <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => {
-                  setSelectedPlaylist(null)
-                  setPlaylistSearchQuery('')
-                  setPlaylistSearchResults([])
-                }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <ArrowLeft size={22} />
-                </button>
-                <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>{selectedPlaylist.name}</h3>
-                <button
-                  className="playlist-delete-btn focusable"
-                  tabIndex={0}
-                  onClick={() => handleDeletePlaylist(selectedPlaylist.id)}
-                  style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
-                >
-                  Delete Playlist
-                </button>
-              </div>
+            (() => {
+              const username = currentUser?.displayName || localStorage.getItem('username') || '';
+              const email = currentUser?.email || localStorage.getItem('email') || '';
+              const emailName = email ? email.split('@')[0] : '';
+              const uid = currentUser?.uid || localStorage.getItem('tv_uid') || null;
+              const isCreator =
+                (uid && selectedPlaylist.uid === uid) ||
+                (username && selectedPlaylist.creator === username) ||
+                (emailName && selectedPlaylist.creator === emailName);
+              const isHost = email === 'astraardency@gmail.com';
 
-              <div className="playlist-banner" style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '24px',
-                alignItems: 'flex-end',
-                padding: '20px 0',
-                margin: '20px 0',
-              }}>
-                <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => {
+              return (
+                <div className="playlist-container">
+                  <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => {
+                      setSelectedPlaylist(null)
+                      setPlaylistSearchQuery('')
+                      setPlaylistSearchResults([])
+                    }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <ArrowLeft size={22} />
+                    </button>
+                    <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>{selectedPlaylist.name}</h3>
+                    {(isCreator || isHost) && (
+                      <button
+                        className="playlist-delete-btn focusable"
+                        tabIndex={0}
+                        onClick={() => handleDeletePlaylist(selectedPlaylist.id)}
+                        style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+                      >
+                        Delete Playlist
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="playlist-banner" style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '24px',
+                    alignItems: 'flex-end',
+                    padding: '20px 0',
+                    margin: '20px 0',
+                  }}>
+                    <div style={{ position: 'relative', cursor: isCreator ? 'pointer' : 'default' }} onClick={() => {
+                      if (!isCreator) {
+                    triggerToast('Only the playlist creator can change the cover.');
+                    return;
+                  }
                   setEditCoverImg(selectedPlaylist.img || '');
                   setShowEditCoverModal(true);
                 }}>
@@ -3376,22 +3498,24 @@ function App() {
                       <ListMusic size={64} color="white" />
                     </div>
                   )}
-                  <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(0,0,0,0.4)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: 0,
-                    transition: 'opacity 0.2s'
-                  }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                  >
-                    <span style={{ color: 'white', fontWeight: '600' }}>Change Cover</span>
-                  </div>
+                  {isCreator && (
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'rgba(0,0,0,0.4)',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0,
+                      transition: 'opacity 0.2s'
+                    }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                    >
+                      <span style={{ color: 'white', fontWeight: '600' }}>Change Cover</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="playlist-banner-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: '1 1 200px' }}>
@@ -3514,25 +3638,28 @@ function App() {
                           <div className="playlist-song-artist">{song.artist}</div>
                         </div>
                       </div>
-                      <button
-                        className="remove-song-btn focusable"
-                        tabIndex={0}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          removeSongFromPlaylist(selectedPlaylist.id, song.id)
-                        }}
-                        style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}
-                      >
-                        Remove
-                      </button>
+                      {isCreator && (
+                        <button
+                          className="remove-song-btn focusable"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeSongFromPlaylist(selectedPlaylist.id, song.id)
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   ))
                 )}
               </div>
 
               {/* Add Songs Section */}
-              <div className="playlist-add-songs-section">
-                <h3 className="section-title">Add Songs</h3>
+              {isCreator && (
+                <div className="playlist-add-songs-section">
+                  <h3 className="section-title">Add Songs</h3>
                 <form onSubmit={handlePlaylistSearch} className="search-form" style={{ marginBottom: '15px' }}>
                   <div className="search-input-wrapper">
                     <Search size={18} className="search-box-icon" />
@@ -3589,7 +3716,10 @@ function App() {
                   })}
                 </div>
               </div>
+              )}
             </div>
+          );
+          })()
           ) : (
             <div className="playlists-screen">
               <div className="playlists-header-container">
@@ -4116,7 +4246,7 @@ function App() {
                 id="np-vol-slider"
                 type="range"
                 min="0"
-                max="3"
+                max="1"
                 step="0.05"
                 defaultValue="1"
                 onChange={handleVolumeChange}
@@ -4427,7 +4557,6 @@ function App() {
                   src={getSongImage(currentTrack)}
                   alt={currentTrack.title}
                   className="fullscreen-album-img"
-                  style={{ borderRadius: '24px' }}
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop';
                   }}
@@ -4437,121 +4566,118 @@ function App() {
 
             {/* Right side: Controls & Queue */}
             <div className="fullscreen-body-right">
-              {/* Visualizer */}
-              <div style={{ display: 'flex', gap: '4px', height: '40px', alignItems: 'flex-end', marginBottom: '24px' }}>
-                {Array.from(visualizerData).map((val, idx) => (
-                  <div key={idx} style={{
-                    width: '6px',
-                    height: `${Math.max(4, (val / 255) * 40)}px`,
-                    background: 'var(--card-orange)',
-                    borderRadius: '4px',
-                    transition: 'height 0.05s ease'
-                  }} />
-                ))}
-              </div>
-
-              <div className="fullscreen-track-details">
-                <h1 className="fullscreen-title">{currentTrack.title}</h1>
-                <p className="fullscreen-artist">{currentTrack.artist}</p>
-              </div>
-
-              {/* Timeline */}
-              <div className="fullscreen-timeline-container">
-                <div className="fullscreen-time-labels">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTimeRemaining(currentTime, duration)}</span>
+              <div className="fullscreen-glass-panel">
+                <div className="fullscreen-track-details">
+                  <h1 className="fullscreen-title">{currentTrack.title}</h1>
+                  <p className="fullscreen-artist">{currentTrack.artist}</p>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 100}
-                  value={currentTime}
-                  onPointerDown={() => setIsDraggingSlider(true)}
-                  onPointerUp={handleProgressChangeComplete}
-                  onTouchStart={() => setIsDraggingSlider(true)}
-                  onTouchEnd={handleProgressChangeComplete}
-                  onChange={handleProgressChange}
-                  className="fullscreen-timeline-slider"
-                  style={{ '--progress': duration ? `${(currentTime / duration) * 100}%` : '0%' }}
-                />
-              </div>
 
-              {/* Playback Controls */}
-              <div className="fullscreen-controls-row">
-                <button className={`fullscreen-icon-btn ${likedSongs.includes(currentTrack.title) ? 'heartbeat' : ''}`} onClick={(e) => toggleLike(currentTrack.title, e)}>
-                  <Heart
-                    size={22}
-                    fill={likedSongs.includes(currentTrack.title) ? "#ff6b6b" : "none"}
-                    stroke={likedSongs.includes(currentTrack.title) ? "#ff6b6b" : "white"}
+                {/* Timeline */}
+                <div className="fullscreen-timeline-container">
+                  <div className="fullscreen-time-labels">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTimeRemaining(currentTime, duration)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 100}
+                    value={currentTime}
+                    onPointerDown={() => setIsDraggingSlider(true)}
+                    onPointerUp={handleProgressChangeComplete}
+                    onTouchStart={() => setIsDraggingSlider(true)}
+                    onTouchEnd={handleProgressChangeComplete}
+                    onChange={handleProgressChange}
+                    className="fullscreen-timeline-slider"
+                    style={{ '--progress': duration ? `${(currentTime / duration) * 100}%` : '0%' }}
                   />
-                </button>
+                </div>
 
-                <button className="fullscreen-icon-btn" onClick={() => setIsDeviceModalOpen(true)}>
-                  <MonitorSpeaker size={22} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
-                </button>
-                
-                <button className="fullscreen-icon-btn" onClick={() => setIsLiveConnectOpen(true)} title="Live Connect">
-                  <Radio size={22} color={isLiveConnected ? 'var(--card-orange, #f5954a)' : 'white'} />
-                </button>
+                {/* Playback Controls */}
+                <div className="fullscreen-controls-container">
+                  {/* Primary Controls */}
+                  <div className="fullscreen-controls-primary">
+                    <button className="fullscreen-icon-btn" onClick={toggleShuffleMode}>
+                      <Sparkles size={24} fill={isShuffleMode ? "var(--card-orange)" : "none"} color={isShuffleMode ? "var(--card-orange)" : "white"} />
+                    </button>
 
-                <button className="fullscreen-icon-btn" onClick={playPreviousSong}>
-                  <SkipForward size={24} style={{ transform: 'rotate(180deg)' }} />
-                </button>
+                    <button className="fullscreen-icon-btn" onClick={playPreviousSong}>
+                      <SkipForward size={28} style={{ transform: 'rotate(180deg)' }} />
+                    </button>
 
-                <button className="fullscreen-play-btn" onClick={togglePlay}>
-                  {isPlaying ? <Pause size={28} fill="black" /> : <Play size={28} fill="black" style={{ marginLeft: '4px' }} />}
-                </button>
+                    <button className="fullscreen-play-btn" onClick={togglePlay}>
+                      {isPlaying ? <Pause size={32} fill="white" /> : <Play size={32} fill="white" style={{ marginLeft: '4px' }} />}
+                    </button>
 
-                <button className="fullscreen-icon-btn" onClick={playNextSong}>
-                  <SkipForward size={24} />
-                </button>
+                    <button className="fullscreen-icon-btn" onClick={playNextSong}>
+                      <SkipForward size={28} />
+                    </button>
 
-                <button className="fullscreen-icon-btn" onClick={toggleShuffleMode}>
-                  <Sparkles size={20} fill={isShuffleMode ? "var(--card-orange)" : "none"} color={isShuffleMode ? "var(--card-orange)" : "white"} />
-                </button>
-                <button className="fullscreen-icon-btn" onClick={() => setShowEqModal(true)}>
-                  <SlidersHorizontal size={20} color={showEqModal ? 'var(--card-orange)' : 'white'} />
-                </button>
-                <button className="fullscreen-icon-btn" onClick={(e) => handleShare(currentTrack, e)}>
-                  <Share2 size={20} color="white" />
-                </button>
-              </div>
-
-              {/* Volume Row */}
-              <div className="fullscreen-volume-row">
-                <Headphones size={18} style={{ opacity: 0.6 }} />
-                <input
-                  type="range"
-                  min="0"
-                  max="3"
-                  step="0.05"
-                  defaultValue="1"
-                  onChange={handleVolumeChange}
-                  className="fullscreen-volume-slider"
-                  title="Volume"
-                />
-              </div>
-
-              {/* Up Next Section */}
-              <div className="fullscreen-queue-section">
-                <div className="fullscreen-queue-header">UP NEXT</div>
-                <div className="fullscreen-queue-list hide-scrollbar">
-                  {getUpcomingSongs().map(({ song, queueIndex }, idx) => (
-                    <div key={song.id || idx} className="fullscreen-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)}>
-                      <img
-                        src={getSongImage(song)}
-                        alt={song.title}
-                        className="fullscreen-queue-img"
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=100&auto=format&fit=crop';
-                        }}
+                    <button className={`fullscreen-icon-btn ${likedSongs.includes(currentTrack.title) ? 'heartbeat' : ''}`} onClick={(e) => toggleLike(currentTrack.title, e)}>
+                      <Heart
+                        size={24}
+                        fill={likedSongs.includes(currentTrack.title) ? "#f5954a" : "none"}
+                        stroke={likedSongs.includes(currentTrack.title) ? "#f5954a" : "white"}
                       />
-                      <div className="fullscreen-queue-info">
-                        <div className="fullscreen-queue-title">{song.title}</div>
-                        <div className="fullscreen-queue-artist">{song.artist}</div>
+                    </button>
+                  </div>
+
+                  {/* Secondary Controls */}
+                  <div className="fullscreen-controls-secondary">
+                    <button className="fullscreen-icon-btn" onClick={() => setIsDeviceModalOpen(true)}>
+                      <MonitorSpeaker size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
+                    </button>
+                    
+                    <button className="fullscreen-icon-btn" onClick={() => setIsLiveConnectOpen(true)} title="Live Connect">
+                      <Radio size={20} color={isLiveConnected ? 'var(--card-orange, #f5954a)' : 'white'} />
+                    </button>
+
+                    <button className="fullscreen-icon-btn" onClick={() => setShowEqModal(true)}>
+                      <SlidersHorizontal size={20} color={showEqModal ? 'var(--card-orange)' : 'white'} />
+                    </button>
+
+                    <button className="fullscreen-icon-btn" onClick={(e) => handleShare(currentTrack, e)}>
+                      <Share2 size={20} color="white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Volume Row */}
+                <div className="fullscreen-volume-row">
+                  <Headphones size={18} style={{ opacity: 0.6 }} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    defaultValue="1"
+                    onChange={handleVolumeChange}
+                    className="fullscreen-volume-slider"
+                    title="Volume"
+                  />
+                </div>
+
+                {/* Up Next Section */}
+                <div className="fullscreen-queue-section">
+                  <div className="fullscreen-queue-header">UP NEXT</div>
+                  <div className="fullscreen-queue-list hide-scrollbar">
+                    {getUpcomingSongs().map(({ song, queueIndex }, idx) => (
+                      <div key={song.id || idx} className="fullscreen-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)}>
+                        <img
+                          src={getSongImage(song)}
+                          alt={song.title}
+                          className="fullscreen-queue-img"
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=100&auto=format&fit=crop';
+                          }}
+                        />
+                        <div className="fullscreen-queue-info">
+                          <div className="fullscreen-queue-title">{song.title}</div>
+                          <div className="fullscreen-queue-artist">{song.artist}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
