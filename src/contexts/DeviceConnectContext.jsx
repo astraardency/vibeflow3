@@ -56,7 +56,9 @@ export const DeviceConnectProvider = ({ children }) => {
   const [remotePlaybackState, setRemotePlaybackState] = useState({
     isPlaying: false,
     currentTrack: null,
-    currentTime: 0
+    currentTime: 0,
+    queue: [],
+    queueIndex: -1
   });
   
   const [incomingCommand, setIncomingCommand] = useState(null);
@@ -68,9 +70,10 @@ export const DeviceConnectProvider = ({ children }) => {
     const deviceRef = doc(db, `account_devices/${uid}/devices/${deviceId}`);
 
     const heartbeat = () => {
+      const isTVMode = window.location.search.includes('mode=tv') || localStorage.getItem('tv_mode') === 'true';
       setDoc(deviceRef, {
         deviceName,
-        deviceType: Capacitor.isNativePlatform() ? 'mobile' : 'web',
+        deviceType: isTVMode ? 'tv' : (Capacitor.isNativePlatform() ? 'mobile' : 'web'),
         lastActive: Date.now()
       }, { merge: true }).catch(console.error);
     };
@@ -131,7 +134,9 @@ export const DeviceConnectProvider = ({ children }) => {
         setRemotePlaybackState({
           isPlaying: data.isPlaying || false,
           currentTrack: data.currentTrack || null,
-          currentTime: data.currentTime || 0
+          currentTime: data.currentTime || 0,
+          queue: data.queue || [],
+          queueIndex: data.queueIndex ?? -1
         });
 
         // If a command was issued and we are the active device
@@ -176,6 +181,20 @@ export const DeviceConnectProvider = ({ children }) => {
     }, { merge: true }).catch(console.error);
   }, [currentUser, activeDeviceId, deviceId]);
 
+  const syncQueue = useCallback(async (queue, queueIndex) => {
+    if (!currentUser || activeDeviceId !== deviceId) return;
+    const stateRef = doc(db, 'account_devices', currentUser.uid);
+    const safeQueue = (queue || []).map(s => ({
+      id: s.id,
+      title: s.title,
+      artist: s.artist,
+      img: s.img,
+      duration: s.duration || 0,
+      audioUrl: s.audioUrl || ''
+    })).slice(0, 50);
+    await updateDoc(stateRef, { queue: safeQueue, queueIndex }).catch(console.error);
+  }, [currentUser, activeDeviceId, deviceId]);
+
   const connectDevice = async (targetDeviceId) => {
     if (!currentUser) return;
     const stateRef = doc(db, 'account_devices', currentUser.uid);
@@ -208,7 +227,8 @@ export const DeviceConnectProvider = ({ children }) => {
     remotePlaybackState,
     incomingCommand, setIncomingCommand,
     sendCommand,
-    broadcastState
+    broadcastState,
+    syncQueue
   };
 
   return (

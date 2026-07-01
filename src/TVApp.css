@@ -277,3 +277,11 @@
 .tv-focus-outline {
   /* Helper class if needed */
 }
+
+.tv-focusable:focus {
+  outline: none;
+  transform: scale(1.05);
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+

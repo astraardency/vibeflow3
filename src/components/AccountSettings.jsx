@@ -893,9 +893,11 @@ const AccountSettings = ({ onClose }) => {
             <h2 className="mobile-header-title">{getHeaderTitle()}</h2>
             {currentView === 'main' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button className="mobile-icon-btn" onClick={startScan}>
-                  <Camera size={24} />
-                </button>
+                {isCapacitor && (
+                  <button className="mobile-icon-btn" onClick={startScan}>
+                    <Camera size={24} />
+                  </button>
+                )}
                 <button className="mobile-icon-btn">
                   <Search size={24} />
                 </button>

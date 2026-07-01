@@ -107,7 +107,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
     }
     try {
       await updateDoc(doc(db, 'playlists', playlistId), { songs: updatedSongs })
-    } catch (error) {}
+    } catch (error) { console.error('Error updating playlist in cloud:', error); }
   }
 
   const getSuggestedSongs = () => {
@@ -150,7 +150,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
     }
     try {
       await updateDoc(doc(db, 'playlists', playlistId), { songs: updatedSongs })
-    } catch (error) {}
+    } catch (error) { console.error('Error updating playlist in cloud:', error); }
   }
 
   if (activeTab === 'create') {
@@ -306,7 +306,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                         setSelectedPlaylist(updatedPlaylist);
                         const updatedPlaylists = playlists.map(p => p.id === selectedPlaylist.id ? updatedPlaylist : p);
                         setPlaylists(updatedPlaylists);
-                        try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch(e) {}
+                        try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch(e) { console.warn('Failed to save to localStorage:', e); }
                         import('firebase/firestore').then(({ doc: fDoc, setDoc: fSetDoc }) => {
                           fSetDoc(fDoc(db, 'playlists', selectedPlaylist.id), { img: url }, { merge: true }).catch(e => console.warn('Sync failed:', e));
                         });

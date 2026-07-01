@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDeviceConnect } from '../contexts/DeviceConnectContext';
-import { X, MonitorSpeaker, Smartphone, Laptop } from 'lucide-react';
+import { X, MonitorSpeaker, Smartphone, Laptop, Monitor } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 const DeviceConnectModal = () => {
@@ -40,7 +40,7 @@ const DeviceConnectModal = () => {
           {availableDevices.map(device => {
             const isActive = device.id === activeDeviceId;
             const isLocal = device.id === deviceId;
-            const Icon = device.deviceType === 'mobile' ? Smartphone : Laptop;
+            const Icon = device.deviceType === 'mobile' ? Smartphone : (device.deviceType === 'tv' ? Monitor : Laptop);
             
             return (
               <div 

@@ -1,5 +1,6 @@
 // Primary and fallback API endpoints
 const API_ENDPOINTS = [
+  'http://localhost:5000/api',
   'https://saavn.sumit.co/api',
 ];
 
@@ -67,6 +68,18 @@ export const searchSongs = async (query, limit = 40) => {
     return searchCache.get(cacheKey);
   }
 
+  // Check sessionStorage for search query caching
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.timestamp < 15 * 60 * 1000) { // 15 mins cache
+        searchCache.set(cacheKey, parsed.data);
+        return parsed.data;
+      }
+    }
+  } catch (e) {}
+
   try {
     const data = await fetchWithRetry(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
 
@@ -77,9 +90,18 @@ export const searchSongs = async (query, limit = 40) => {
         const lang = song.language || '';
         return lang === 'tamil' || lang === 'unknown' || lang === '';
       });
-      // Cache for 5 minutes
+      // Cache in-memory
       searchCache.set(cacheKey, songs);
       setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
+      
+      // Cache in sessionStorage
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: songs,
+          timestamp: Date.now()
+        }));
+      } catch (e) {}
+
       return songs;
     }
     return [];
@@ -95,26 +117,64 @@ export const searchSongs = async (query, limit = 40) => {
  * @returns {Promise<Object|null>} The best matching saavn song
  */
 export const getPlayableStreamForSong = async (song) => {
-  // If the song has a valid JioSaavn-like ID, try fetching its details directly first
-  if (song.id && typeof song.id === 'string' && song.id.length > 5 && !song.id.includes('dummy') && !song.id.startsWith('song_')) {
-    const cacheKey = `song_${song.id}`;
+  const cleanTitle = (song.title || '').replace(/\s*\(from [^)]+\)\s*/ig, '').replace(/\s*- From .*/ig, '').trim();
+  const primaryArtist = (song.artist || '').split(',')[0].trim();
+  const movie = song.movie || song.album || '';
+  const queryStr = song.query || `${cleanTitle} ${movie} ${primaryArtist}`.trim();
+  const queryCacheKey = `query_to_id_${queryStr.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+  // 1. Resolve Saavn ID (check song itself, then localStorage)
+  let saavnId = (song.id && typeof song.id === 'string' && song.id.length > 5 && !song.id.includes('dummy') && !song.id.startsWith('song_')) ? song.id : null;
+  
+  if (!saavnId && queryStr) {
+    try {
+      saavnId = localStorage.getItem(queryCacheKey);
+    } catch (e) {}
+  }
+
+  // 2. If we have Saavn ID, check details cache (in-memory or sessionStorage)
+  if (saavnId) {
+    const cacheKey = `song_${saavnId}`;
+    let cachedSong = null;
+
     if (songCache.has(cacheKey)) {
-      return songCache.get(cacheKey);
+      cachedSong = songCache.get(cacheKey);
+    } else {
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.timestamp < 25 * 60 * 1000) { // 25 mins validity
+            cachedSong = parsed.data;
+            songCache.set(cacheKey, cachedSong);
+          }
+        }
+      } catch (e) {}
     }
-    const directMatch = await getSongDetails(song.id);
+
+    if (cachedSong && cachedSong.audioUrl) {
+      return cachedSong;
+    }
+
+    // Direct detail fetch (cache miss but ID is known)
+    const directMatch = await getSongDetails(saavnId);
     if (directMatch && directMatch.audioUrl) {
       songCache.set(cacheKey, directMatch);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: directMatch,
+          timestamp: Date.now()
+        }));
+        // Store static ID mapping permanently
+        if (queryStr) {
+          localStorage.setItem(queryCacheKey, saavnId);
+        }
+      } catch (e) {}
       return directMatch;
     }
   }
 
-  const cleanTitle = (song.title || '').replace(/\s*\(from [^)]+\)\s*/ig, '').replace(/\s*- From .*/ig, '').trim();
-  const primaryArtist = (song.artist || '').split(',')[0].trim();
-  const movie = song.movie || song.album || '';
-
-  // Create search query prioritizing title, movie, then artist
-  const queryStr = song.query || `${cleanTitle} ${movie} ${primaryArtist}`.trim();
-
+  // 3. Complete Cache Miss - Do search and match logic
   const findBestMatch = (searchResultList) => {
     let match = null;
 
@@ -244,6 +304,25 @@ export const getPlayableStreamForSong = async (song) => {
     }
   }
 
+  // Save resolved mappings
+  if (playableResult && playableResult.id) {
+    const cacheKey = `song_${playableResult.id}`;
+    songCache.set(cacheKey, playableResult);
+    
+    try {
+      // 1. Cache details in sessionStorage (25 min TTL)
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        data: playableResult,
+        timestamp: Date.now()
+      }));
+
+      // 2. Cache query-to-ID mapping permanently in localStorage
+      if (queryStr) {
+        localStorage.setItem(queryCacheKey, playableResult.id);
+      }
+    } catch (e) {}
+  }
+
   return playableResult;
 };
 
@@ -258,6 +337,18 @@ export const getSongDetails = async (id) => {
     return songCache.get(cacheKey);
   }
 
+  // Check sessionStorage
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.timestamp < 25 * 60 * 1000) { // 25 mins validity
+        songCache.set(cacheKey, parsed.data);
+        return parsed.data;
+      }
+    }
+  } catch (e) {}
+
   try {
     const data = await fetchWithRetry(`/songs/${id}`);
 
@@ -265,8 +356,16 @@ export const getSongDetails = async (id) => {
       const result = formatSongData(data.data[0]);
       if (result && result.audioUrl) {
         songCache.set(cacheKey, result);
-        // Expire cache after 30 minutes (stream URLs expire)
+        // Expire cache after 30 minutes in-memory
         setTimeout(() => songCache.delete(cacheKey), 30 * 60 * 1000);
+        
+        // Cache in sessionStorage (25 mins TTL)
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: result,
+            timestamp: Date.now()
+          }));
+        } catch (e) {}
       }
       return result;
     }

@@ -24,6 +24,9 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import AccountSettings from './components/AccountSettings'
 import DeviceConnectModal from './components/DeviceConnectModal'
 import { useDeviceConnect } from './contexts/DeviceConnectContext'
+import { useAuth } from './contexts/AuthContext'
+import { usePlayer } from './contexts/PlayerContext'
+import { useLiveConnect } from './contexts/LiveConnectContext'
 
 import DownloadContainer from './components/DownloadContainer'
 import './App.css'
@@ -77,23 +80,7 @@ function App() {
     loadData();
   }, []);
 
-  // One-time run to delete "yuvan'" playlist for all users
-  useEffect(() => {
-    const deleteTargetPlaylist = async () => {
-      try {
-        const snap = await getDocs(collection(db, 'playlists'));
-        snap.docs.forEach(async (d) => {
-          if (d.data().name === "yuvan drugs" || d.data().name === "yuvan'") {
-            await deleteDoc(doc(db, 'playlists', d.id));
-            console.log("Deleted playlist: " + d.data().name);
-          }
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    deleteTargetPlaylist();
-  }, []);
+
 
   // Global States
   const { activeDeviceId, isLocalDeviceActive, isDeviceModalOpen, setIsDeviceModalOpen, remotePlaybackState, sendCommand, incomingCommand, setIncomingCommand, broadcastState } = useDeviceConnect();
@@ -102,72 +89,72 @@ function App() {
   const [activeTab, setActiveTab] = useState('home')
 
   // Auth & Sync States
-  const [currentUser, setCurrentUser] = useState(null)
-  const [isUserDataLoaded, setIsUserDataLoaded] = useState(false)
-  const lastRemoteState = useRef({
-    likedSongs: null,
-    listeningActivity: null,
-    playsCount: null,
-    isDarkMode: null,
-    artistPlays: null,
-    savedPlaylistIds: null
-  });
+  const {
+    currentUser,
+    isUserDataLoaded,
+    likedSongs,
+    listeningActivity,
+    setListeningActivity,
+    playsCount,
+    setPlaysCount,
+    artistPlays,
+    setArtistPlays,
+    isDarkMode,
+    setIsDarkMode,
+    savedPlaylistIds,
+    setSavedPlaylistIds,
+    toggleLike
+  } = useAuth();
 
-  // Live Connect States — real-time cross-device playback sync
-  const [isLiveConnectOpen, setIsLiveConnectOpen] = useState(false)
-  const [liveSessionId, setLiveSessionId] = useState(() => localStorage.getItem('live_session_id') || null)
-  const [liveSessionRole, setLiveSessionRole] = useState(() => localStorage.getItem('live_session_role') || null) // 'host' | 'guest'
-  const [liveSessionCode, setLiveSessionCode] = useState(() => localStorage.getItem('live_session_code') || null)
-  const [joinCodeInput, setJoinCodeInput] = useState('')
-  const [isLiveConnected, setIsLiveConnected] = useState(false)
-  const [liveGuestCount, setLiveGuestCount] = useState(0)
-  const liveConnectRef = useRef(null) // unsubscribe fn for live session listener
-  const isBroadcastingRef = useRef(false) // prevent echo loop
+  // Live Connect States
+  const {
+    isLiveConnectOpen, setIsLiveConnectOpen,
+    liveSessionId, liveSessionRole, liveSessionCode,
+    joinCodeInput, setJoinCodeInput,
+    isLiveConnected, liveGuestCount,
+    startLiveSession, joinLiveSession, disconnectLiveSession
+  } = useLiveConnect();
 
   // Player States
-  const [currentTrack, setCurrentTrack] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lastPlayedTrack');
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
+  const {
+    audioRef,
+    currentTrack, setCurrentTrack,
+    isPlaying, setIsPlaying,
+    isLoadingSong,
+    currentTime, setCurrentTime,
+    duration, setDuration,
+    isShuffleMode, toggleShuffle,
+    currentTrackIndex, setCurrentTrackIndex,
+    activePlaybackQueue, setActivePlaybackQueue,
+    downloadedSongs, setDownloadedSongs,
+    playSong, playNextSong, playPreviousSong, togglePlay,
+    prefetchSong, preloadAudioFile
+  } = usePlayer();
 
+  const [prefetchingNext, setPrefetchingNext] = useState(false)
+  const [isDesktopFullscreenOpen, setIsDesktopFullscreenOpen] = useState(false)
+  const [isEarPodsActive, setIsEarPodsActive] = useState(false)
 
   const hasAttemptedAutoResume = useRef(false);
   useEffect(() => {
     if (!hasAttemptedAutoResume.current && currentTrack) {
       hasAttemptedAutoResume.current = true;
+      let retries = 0;
       const checkAudio = setInterval(() => {
         if (Capacitor.isNativePlatform() || (audioRef && audioRef.current)) {
           clearInterval(checkAudio);
-          if (!isPlaying) {
-            playSong(currentTrack).catch(e => console.log('Auto-play blocked', e));
+          playSong(currentTrack).catch(e => console.log('Auto-play blocked', e));
+        } else {
+          retries++;
+          if (retries >= 10) {
+            clearInterval(checkAudio);
+            console.warn('Auto-resume timed out: audio component never became ready.');
           }
         }
       }, 500);
       return () => clearInterval(checkAudio);
     }
-  }, []);
-
-  // Pause local audio immediately when another device takes over
-  useEffect(() => {
-    if (!isLocalDeviceActive) {
-      if (Capacitor.isNativePlatform()) {
-        NativeAudio.pause().catch(() => {});
-      } else if (audioRef && audioRef.current) {
-        audioRef.current.pause();
-      }
-      setIsPlaying(false);
-    }
-  }, [isLocalDeviceActive]);
-  const [isDesktopFullscreenOpen, setIsDesktopFullscreenOpen] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isLoadingSong, setIsLoadingSong] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [isEarPodsActive, setIsEarPodsActive] = useState(false)
-  const [isShuffleMode, setIsShuffleMode] = useState(false)
-  const [prefetchingNext, setPrefetchingNext] = useState(false)
+  }, [currentTrack, audioRef, playSong]);
 
   // Error Boundary State
   const [hasError, setHasError] = useState(false)
@@ -282,23 +269,7 @@ function App() {
   const handleFloatingTouchEnd = () => {
     setTimeout(() => { dragRef.current.isDragging = false; }, 50);
   }
-  const [likedSongs, setLikedSongs] = useState([])
-  const [playsCount, setPlaysCount] = useState(() => {
-    try {
-      const saved = localStorage.getItem('plays_count')
-      if (saved) {
-        const parsed = parseInt(saved, 10)
-        return isNaN(parsed) ? 0 : parsed
-      }
-      return 0
-    } catch (e) {
-      return 0
-    }
-  })
-
-  useEffect(() => {
-    localStorage.setItem('plays_count', playsCount)
-  }, [playsCount])
+  // likedSongs and playsCount are synced via AuthContext
   const [showAllComposers, setShowAllComposers] = useState(false);
   const [dailyPlays, setDailyPlays] = useState(() => {
     try {
@@ -314,29 +285,7 @@ function App() {
     localStorage.setItem('daily_plays', JSON.stringify(dailyPlays));
   }, [dailyPlays]);
 
-  const [artistPlays, setArtistPlays] = useState(() => {
-    try {
-      const saved = localStorage.getItem('artist_plays')
-      const parsed = saved ? JSON.parse(saved) : {}
-      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {}
-    } catch (e) {
-      return {}
-    }
-  })
-
-  useEffect(() => {
-    localStorage.setItem('artist_plays', JSON.stringify(artistPlays))
-  }, [artistPlays])
-
-  const [listeningActivity, setListeningActivity] = useState(() => {
-    try {
-      const saved = localStorage.getItem('listening_activity')
-      const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  })
+  // artistPlays and listeningActivity are synced via AuthContext
 
   // Diagnostic utility for the user to cross check broken songs
   useEffect(() => {
@@ -434,93 +383,20 @@ function App() {
       })
     };
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
-      // Check for TV Login override
-      const tvUid = localStorage.getItem('tv_uid');
-      const user = tvUid ? { uid: tvUid, isAnonymous: false, displayName: localStorage.getItem('username'), email: localStorage.getItem('email') } : authUser;
-
-      setCurrentUser(user);
-      if (user && !user.isAnonymous) {
-        localStorage.setItem('isLoggedIn', 'true');
-        setIsAccountSettingsOpen(false);
-
-        const activeUid = user.uid;
-        if (unsubscribeUserDoc) unsubscribeUserDoc();
-        unsubscribeUserDoc = onSnapshot(doc(db, 'users', activeUid), (userDoc) => {
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (JSON.stringify(data.likedSongs) !== JSON.stringify(lastRemoteState.current.likedSongs)) {
-              setLikedSongs(prev => {
-                const remote = data.likedSongs || [];
-                const merged = Array.from(new Set([...(prev || []), ...remote]));
-                return merged;
-              });
-              lastRemoteState.current.likedSongs = data.likedSongs || [];
-            }
-            if (JSON.stringify(data.listeningActivity) !== JSON.stringify(lastRemoteState.current.listeningActivity)) {
-              setListeningActivity(data.listeningActivity || []);
-              lastRemoteState.current.listeningActivity = data.listeningActivity;
-            }
-            if (data.playsCount !== lastRemoteState.current.playsCount) {
-              setPlaysCount(data.playsCount || 0);
-              lastRemoteState.current.playsCount = data.playsCount;
-            }
-            if (data.isDarkMode !== lastRemoteState.current.isDarkMode) {
-              setIsDarkMode(data.isDarkMode);
-              lastRemoteState.current.isDarkMode = data.isDarkMode;
-            }
-            if (JSON.stringify(data.artistPlays) !== JSON.stringify(lastRemoteState.current.artistPlays)) {
-              setArtistPlays(data.artistPlays || {});
-              lastRemoteState.current.artistPlays = data.artistPlays;
-            }
-            if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
-              let fetched = data.savedPlaylistIds;
-              if (!fetched || fetched.length === 0) {
-                const creatorName = user.displayName || (user.email ? user.email.split('@')[0] : null) || localStorage.getItem('username');
-                if (creatorName) {
-                  getDocs(collection(db, 'playlists')).then(snap => {
-                    const owned = [];
-                    snap.forEach(d => {
-                      if (d.data().creator === creatorName) owned.push(d.id);
-                    });
-                    if (owned.length > 0) {
-                      setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...owned])));
-                      lastRemoteState.current.savedPlaylistIds = owned;
-                    } else {
-                      lastRemoteState.current.savedPlaylistIds = [];
-                    }
-                  }).catch(e => console.error(e));
-                } else {
-                  lastRemoteState.current.savedPlaylistIds = [];
-                }
-              } else {
-                setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...fetched])));
-                lastRemoteState.current.savedPlaylistIds = fetched;
-              }
-            }
-          }
-        }, (error) => {
-          console.error("Error fetching user data in real-time:", error);
-        });
-        
-        setIsUserDataLoaded(true);
-      } else {
-        if (unsubscribeUserDoc) unsubscribeUserDoc();
-        setIsUserDataLoaded(false);
-        localStorage.setItem('isLoggedIn', 'false');
-        setIsAccountSettingsOpen(true);
-      }
-
-      // Re-run snapshot setup whether logged in or out, to clear old errors and fetch with new permissions
-      setupSnapshot();
-    });
+    setupSnapshot();
 
     return () => {
-      unsubscribeAuth();
       if (unsubscribeSnapshot) unsubscribeSnapshot();
-      if (unsubscribeUserDoc) unsubscribeUserDoc();
     }
   }, [])
+
+  useEffect(() => {
+    if (currentUser && !currentUser.isAnonymous) {
+      setIsAccountSettingsOpen(false);
+    } else if (!currentUser) {
+      setIsAccountSettingsOpen(true);
+    }
+  }, [currentUser]);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null)
   const [playlistSearchQuery, setPlaylistSearchQuery] = useState('')
   const [playlistSearchResults, setPlaylistSearchResults] = useState([])
@@ -532,15 +408,7 @@ function App() {
   const [editCoverImg, setEditCoverImg] = useState('')
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(() => localStorage.getItem('isLoggedIn') !== 'true')
 
-  const [downloadedSongs, setDownloadedSongs] = useState(() => {
-    try {
-      const saved = localStorage.getItem('downloadedSongs')
-      const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed : []
-    } catch (e) {
-      return []
-    }
-  })
+
 
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -569,229 +437,11 @@ function App() {
     };
   }, []);
 
-  // ── LIVE CONNECT ─────────────────────────────────────────────────────────────
-  // Generate a readable 6-char session code
-  const generateLiveCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
-  };
 
-  // Host: create a new live session
-  const startLiveSession = async () => {
-    const code = generateLiveCode();
-    const sessionId = `live_${Date.now()}_${code}`;
-    const username = currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : null) || localStorage.getItem('username') || 'Host';
-    try {
-      await setDoc(doc(db, 'live_sessions', sessionId), {
-        code,
-        host: username,
-        hostId: currentUser?.uid || 'anonymous',
-        createdAt: Date.now(),
-        currentTrack: currentTrack || null,
-        isPlaying,
-        currentTime,
-        guestCount: 0,
-        active: true
-      });
-      localStorage.setItem('live_session_id', sessionId);
-      localStorage.setItem('live_session_role', 'host');
-      localStorage.setItem('live_session_code', code);
-      setLiveSessionId(sessionId);
-      setLiveSessionRole('host');
-      setLiveSessionCode(code);
-      setIsLiveConnected(true);
-      subscribeToLiveSession(sessionId, 'host');
-      triggerToast(`Live session started! Code: ${code}`);
-    } catch (e) {
-      console.error('Live Connect start error:', e);
-      triggerToast('Failed to start Live Connect.');
-    }
-  };
-
-  // Guest: join an existing session by code
-  const joinLiveSession = async (code) => {
-    const cleanCode = (code || joinCodeInput).toUpperCase().trim();
-    if (!cleanCode || cleanCode.length < 4) { triggerToast('Enter a valid 6-digit code.'); return; }
-    try {
-      // Find session with matching code
-      const q = query(collection(db, 'live_sessions'), where('code', '==', cleanCode), where('active', '==', true));
-      const snap = await getDocs(q);
-      if (snap.empty) { triggerToast('Session not found. Check the code.'); return; }
-      const sessionDoc = snap.docs[0];
-      const sessionId = sessionDoc.id;
-      const data = sessionDoc.data();
-
-      // Update guest count
-      await updateDoc(doc(db, 'live_sessions', sessionId), { guestCount: (data.guestCount || 0) + 1 });
-
-      localStorage.setItem('live_session_id', sessionId);
-      localStorage.setItem('live_session_role', 'guest');
-      localStorage.setItem('live_session_code', cleanCode);
-      setLiveSessionId(sessionId);
-      setLiveSessionRole('guest');
-      setLiveSessionCode(cleanCode);
-      setIsLiveConnected(true);
-      setJoinCodeInput('');
-      subscribeToLiveSession(sessionId, 'guest');
-      triggerToast(`Joined ${data.host || 'host'}'s session!`);
-    } catch (e) {
-      console.error('Live Connect join error:', e);
-      triggerToast('Failed to join session.');
-    }
-  };
-
-  // Subscribe to live session updates
-  const subscribeToLiveSession = (sessionId, role) => {
-    if (liveConnectRef.current) liveConnectRef.current(); // unsub existing
-    const unsub = onSnapshot(doc(db, 'live_sessions', sessionId), (snap) => {
-      if (!snap.exists()) { disconnectLiveSession(); return; }
-      const data = snap.data();
-      if (!data.active) { disconnectLiveSession(); return; }
-      setLiveGuestCount(data.guestCount || 0);
-      // Guest: sync playback state from host
-      if (role === 'guest' && !isBroadcastingRef.current) {
-        if (data.currentTrack && data.currentTrack.id !== currentTrack?.id) {
-          playSong(data.currentTrack);
-        }
-        if (typeof data.currentTime === 'number' && audioRef.current && Math.abs(audioRef.current.currentTime - data.currentTime) > 3) {
-          if (audioRef.current) audioRef.current.currentTime = data.currentTime;
-        }
-        if (data.isPlaying !== isPlaying) {
-          if (data.isPlaying) {
-            audioRef.current?.play?.().catch(() => { });
-            setIsPlaying(true);
-          } else {
-            audioRef.current?.pause?.();
-            setIsPlaying(false);
-          }
-        }
-      }
-    });
-    liveConnectRef.current = unsub;
-  };
-
-  // Broadcast host state to Firestore
-  const broadcastLiveState = useCallback(async () => {
-    if (!liveSessionId || liveSessionRole !== 'host' || !isLiveConnected) return;
-    isBroadcastingRef.current = true;
-    try {
-      await updateDoc(doc(db, 'live_sessions', liveSessionId), {
-        currentTrack: currentTrack || null,
-        isPlaying,
-        currentTime,
-        updatedAt: Date.now()
-      });
-    } catch (e) { console.error('Broadcast error:', e); }
-    setTimeout(() => { isBroadcastingRef.current = false; }, 500);
-  }, [liveSessionId, liveSessionRole, isLiveConnected, currentTrack, isPlaying, currentTime]);
-
-  // Auto-broadcast when host's state changes
-  useEffect(() => {
-    if (liveSessionRole === 'host' && isLiveConnected) {
-      const t = setTimeout(broadcastLiveState, 300);
-      return () => clearTimeout(t);
-    }
-  }, [currentTrack, isPlaying, broadcastLiveState]);
-
-  // Disconnect from live session
-  const disconnectLiveSession = async () => {
-    if (liveConnectRef.current) { liveConnectRef.current(); liveConnectRef.current = null; }
-    try {
-      if (liveSessionId) {
-        if (liveSessionRole === 'host') {
-          await updateDoc(doc(db, 'live_sessions', liveSessionId), { active: false });
-        } else {
-          const snap = await getDoc(doc(db, 'live_sessions', liveSessionId));
-          if (snap.exists()) {
-            await updateDoc(doc(db, 'live_sessions', liveSessionId), { guestCount: Math.max(0, (snap.data().guestCount || 1) - 1) });
-          }
-        }
-      }
-    } catch (e) { console.error('Disconnect error:', e); }
-    localStorage.removeItem('live_session_id');
-    localStorage.removeItem('live_session_role');
-    localStorage.removeItem('live_session_code');
-    setLiveSessionId(null);
-    setLiveSessionRole(null);
-    setLiveSessionCode(null);
-    setIsLiveConnected(false);
-    setLiveGuestCount(0);
-    triggerToast('Disconnected from Live Connect.');
-  };
-
-  // Re-attach live session listener on mount if session was active
-  useEffect(() => {
-    if (liveSessionId && liveSessionRole) {
-      subscribeToLiveSession(liveSessionId, liveSessionRole);
-      setIsLiveConnected(true);
-    }
-    return () => { if (liveConnectRef.current) liveConnectRef.current(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ──────────────────────────────────────────────────────────────────────────
 
   const [isDownloadOpen, setIsDownloadOpen] = useState(!navigator.onLine)
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(() => {
-    const saved = localStorage.getItem('lastTrackIndex');
-    return saved !== null ? parseInt(saved, 10) : -1;
-  });
-  const [activePlaybackQueue, setActivePlaybackQueue] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lastPlaybackQueue');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  });
-  const [savedPlaylistIds, setSavedPlaylistIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('savedPlaylistIds')
-      const parsed = saved ? JSON.parse(saved) : []
-      return Array.isArray(parsed) ? parsed : []
-    } catch { return [] }
-  })
+
   const [isLikedSongsOpen, setIsLikedSongsOpen] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark'
-  })
-
-  // Sync user data back to Firestore when it changes locally
-  useEffect(() => {
-    const activeUid = currentUser ? currentUser.uid : null;
-    if (activeUid && isUserDataLoaded) {
-      const changes = {};
-      if (JSON.stringify(likedSongs) !== JSON.stringify(lastRemoteState.current.likedSongs)) {
-        changes.likedSongs = likedSongs;
-        lastRemoteState.current.likedSongs = likedSongs;
-      }
-      if (JSON.stringify(listeningActivity) !== JSON.stringify(lastRemoteState.current.listeningActivity)) {
-        changes.listeningActivity = listeningActivity;
-        lastRemoteState.current.listeningActivity = listeningActivity;
-      }
-      if (playsCount !== lastRemoteState.current.playsCount) {
-        changes.playsCount = playsCount;
-        lastRemoteState.current.playsCount = playsCount;
-      }
-      if (isDarkMode !== lastRemoteState.current.isDarkMode) {
-        changes.isDarkMode = isDarkMode;
-        lastRemoteState.current.isDarkMode = isDarkMode;
-      }
-      if (JSON.stringify(artistPlays) !== JSON.stringify(lastRemoteState.current.artistPlays)) {
-        changes.artistPlays = artistPlays;
-        lastRemoteState.current.artistPlays = artistPlays;
-      }
-      if (JSON.stringify(savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
-        changes.savedPlaylistIds = savedPlaylistIds;
-        lastRemoteState.current.savedPlaylistIds = savedPlaylistIds;
-        localStorage.setItem('savedPlaylistIds', JSON.stringify(savedPlaylistIds));
-      }
-
-      if (Object.keys(changes).length > 0) {
-        updateDoc(doc(db, 'users', activeUid), changes).catch(err => console.error("Error syncing data:", err));
-      }
-    }
-  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('')
@@ -865,8 +515,7 @@ function App() {
     return () => window.removeEventListener('offline', handleOffline);
   }, []);
 
-  // Audio Ref
-  const audioRef = useRef(null)
+
 
   // Always-current ref for currentTrack — prevents stale closures in async callbacks
   const currentTrackRef = useRef(currentTrack);
@@ -1006,6 +655,8 @@ function App() {
   // Native Audio Listeners
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
+    if (!isLocalDeviceActive) return;
+
 
     const stateListener = NativeAudio.addListener('onStateChanged', (data) => {
       if (data.state === 'playing') {
@@ -1056,7 +707,7 @@ function App() {
       endedListener.then(l => l.remove());
       trackChangedListener.then(l => l.remove());
     };
-  }, [duration, prefetchingNext]); // Depend on state needed by listeners
+  }, [duration, prefetchingNext, isLocalDeviceActive]); // Depend on state needed by listeners
 
   const triggerToast = (message) => {
     setToastMessage(message)
@@ -1212,40 +863,57 @@ function App() {
     }
 
     const nextSong = activePlaybackQueue[nextIndex];
-    if (nextSong && (!nextSong.audioUrl || nextSong.audioUrl.includes('audio_url_') || nextSong.audioUrl.includes('placeholder_url'))) {
-      const fetchNext = async () => {
-        try {
-          const playableResult = await getPlayableStreamForSong(nextSong);
-          if (playableResult) {
-            setActivePlaybackQueue(prev => {
-              const newQueue = [...prev];
-              // only update if it hasn't been updated already
-              if (!newQueue[nextIndex].audioUrl || newQueue[nextIndex].audioUrl.includes('audio_url_')) {
-                const isDummy = !newQueue[nextIndex].img ||
-                  newQueue[nextIndex].img.includes('image_url_') ||
-                  newQueue[nextIndex].img.includes('placeholder_url') ||
-                  newQueue[nextIndex].img.includes('image_4566c3') ||
-                  newQueue[nextIndex].img.startsWith('image_') ||
-                  newQueue[nextIndex].img.startsWith('images/');
+    if (nextSong) {
+      if (!nextSong.audioUrl || nextSong.audioUrl.includes('audio_url_') || nextSong.audioUrl.includes('placeholder_url')) {
+        const fetchNext = async () => {
+          try {
+            const playableResult = await getPlayableStreamForSong(nextSong);
+            if (playableResult && playableResult.audioUrl) {
+              setActivePlaybackQueue(prev => {
+                const newQueue = [...prev];
+                // only update if it hasn't been updated already
+                if (!newQueue[nextIndex].audioUrl || newQueue[nextIndex].audioUrl.includes('audio_url_')) {
+                  const isDummy = !newQueue[nextIndex].img ||
+                    newQueue[nextIndex].img.includes('image_url_') ||
+                    newQueue[nextIndex].img.includes('placeholder_url') ||
+                    newQueue[nextIndex].img.includes('image_4566c3') ||
+                    newQueue[nextIndex].img.startsWith('image_') ||
+                    newQueue[nextIndex].img.startsWith('images/');
 
-                const finalImg = isDummy ? playableResult.img : newQueue[nextIndex].img;
-                newQueue[nextIndex] = {
-                  ...newQueue[nextIndex],
-                  audioUrl: playableResult.audioUrl,
-                  duration: playableResult.duration || newQueue[nextIndex].duration,
-                  img: finalImg || newQueue[nextIndex].img
-                };
-              }
-              return newQueue;
-            });
+                  const finalImg = isDummy ? playableResult.img : newQueue[nextIndex].img;
+                  newQueue[nextIndex] = {
+                    ...newQueue[nextIndex],
+                    audioUrl: playableResult.audioUrl,
+                    duration: playableResult.duration || newQueue[nextIndex].duration,
+                    img: finalImg || newQueue[nextIndex].img
+                  };
+                }
+                return newQueue;
+              });
+              // Preload the resolved audio file
+              preloadAudioFile(playableResult.audioUrl);
+            }
+          } catch (e) {
+            console.error("Failed to preload next track", e);
           }
-        } catch (e) {
-          console.error("Failed to preload next track", e);
-        }
-      };
-      fetchNext();
+        };
+        fetchNext();
+      } else {
+        // If next song already has a resolved audioUrl, preload it
+        preloadAudioFile(nextSong.audioUrl);
+      }
     }
-  }, [currentTrackIndex, activePlaybackQueue]);
+
+    // Also preload the song after that (currentTrackIndex + 2) if it is already resolved
+    let nextIndex2 = currentTrackIndex + 2;
+    if (nextIndex2 >= activePlaybackQueue.length) {
+      nextIndex2 = nextIndex2 % activePlaybackQueue.length;
+    }
+    const nextSong2 = activePlaybackQueue[nextIndex2];
+    if (nextSong2 && nextSong2.audioUrl && !nextSong2.audioUrl.includes('audio_url_') && !nextSong2.audioUrl.includes('placeholder_url')) {
+      preloadAudioFile(nextSong2.audioUrl);
+    }
+  }, [currentTrackIndex, activePlaybackQueue, preloadAudioFile]);
 
   // Reset sub-views when tab changes
   useEffect(() => {
@@ -1462,19 +1130,7 @@ function App() {
     }
   }, [selectedArtist])
 
-  // Toggle favorite/like song
-  const toggleLike = (songTitle, e) => {
-    if (e) e.stopPropagation();
-    if (!songTitle) return;
-    const currentLikes = Array.isArray(likedSongs) ? likedSongs : [];
-    if (currentLikes.includes(songTitle)) {
-      setLikedSongs(currentLikes.filter(title => title !== songTitle))
-      triggerToast('Removed from Liked Songs')
-    } else {
-      setLikedSongs([...currentLikes, songTitle])
-      triggerToast('Added to Liked Songs')
-    }
-  }
+
 
   // Toggle offline download
   const toggleDownload = async (song, e) => {
@@ -1563,6 +1219,7 @@ function App() {
 
 
 
+  /*
   // Play a song
   const playSong = async (song, index = -1, queueToUse = null) => {
     try {
@@ -1752,6 +1409,7 @@ function App() {
       }
     }
   }
+  */
 
   const connectBluetooth = async () => {
     try {
@@ -1938,7 +1596,7 @@ function App() {
     setSelectedPlaylist(updatedPlaylist);
     const updatedPlaylists = playlists.map(p => p.id === selectedPlaylist.id ? updatedPlaylist : p);
     setPlaylists(updatedPlaylists);
-    try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch (e) { }
+    try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch (e) { console.warn('Failed to save to localStorage:', e); }
     setDoc(doc(db, 'playlists', selectedPlaylist.id), { img: editCoverImg }, { merge: true }).catch(e => console.warn('Sync failed:', e));
     setShowEditCoverModal(false);
     triggerToast("Cover updated!");
@@ -2195,100 +1853,13 @@ function App() {
     return upcoming
   }
 
-  const playNextSong = () => {
-    const list = getCurrentTracklist()
-    if (list.length === 0) return
 
-    let nextIndex = getNextSongIndex(list, currentTrackIndex)
-    // Do NOT pass list as queueToUse — that would reset the queue on every skip.
-    // The queue is already correctly set when the user first clicks a song.
-    playSong(list[nextIndex], nextIndex)
-  }
 
-  const playPreviousSong = () => {
-    const list = getCurrentTracklist()
-    if (list.length === 0) return
-
-    let prevIndex = currentTrackIndex - 1
-    if (prevIndex < 0 || prevIndex >= list.length) {
-      prevIndex = list.length - 1 // loop back
-    }
-    // Do NOT pass list as queueToUse — that would reset the queue on every skip.
-    playSong(list[prevIndex], prevIndex)
-  }
-
-  // Handle incoming remote commands
-  useEffect(() => {
-    if (isLocalDeviceActive && incomingCommand) {
-      console.log('Received remote command:', incomingCommand);
-      switch (incomingCommand.action) {
-        case 'transfer_playback':
-          if (incomingCommand.payload?.track) {
-            playSong(incomingCommand.payload.track).then(() => {
-              if (incomingCommand.payload.time) {
-                if (!Capacitor.isNativePlatform() && audioRef.current) {
-                  audioRef.current.currentTime = incomingCommand.payload.time;
-                }
-              }
-            });
-          }
-          break;
-        case 'play':
-          if (!isPlaying) togglePlay();
-          break;
-        case 'pause':
-          if (isPlaying) togglePlay();
-          break;
-        case 'next':
-          playNextSong();
-          break;
-        case 'prev':
-          playPreviousSong();
-          break;
-        case 'seek': {
-          const seekTime = incomingCommand.payload?.time;
-          if (seekTime !== undefined) {
-            if (Capacitor.isNativePlatform()) {
-              NativeAudio.seek({ time: seekTime });
-            } else if (audioRef.current) {
-              audioRef.current.currentTime = seekTime;
-            }
-            setCurrentTime(seekTime);
-          }
-          break;
-        }
-      }
-      // Clear the command so it doesn't re-fire on re-renders
-      setIncomingCommand(null);
-    }
-  }, [incomingCommand, isLocalDeviceActive]);
-
-  // Broadcast state for device connect when modal opens or track/play state changes
-  useEffect(() => {
-    if (isLocalDeviceActive && currentTrack && broadcastState) {
-      broadcastState(isPlaying, currentTrack, currentTime);
-    }
-  }, [isDeviceModalOpen, currentTrack?.id, isPlaying, isLocalDeviceActive]);
 
   const toggleShuffleMode = () => {
     if (!currentTrack) return;
-    if (!isShuffleMode) {
-      setIsShuffleMode(true);
-      const currentQueue = getCurrentTracklist();
-      if (currentQueue.length > 1 && currentTrackIndex !== -1) {
-        const remaining = currentQueue.filter((_, i) => i !== currentTrackIndex);
-        for (let i = remaining.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
-        }
-        setActivePlaybackQueue([currentQueue[currentTrackIndex], ...remaining]);
-        setCurrentTrackIndex(0);
-      }
-      triggerToast('Shuffle ON');
-    } else {
-      setIsShuffleMode(false);
-      triggerToast('Shuffle OFF');
-    }
+    toggleShuffle();
+    triggerToast(!isShuffleMode ? 'Shuffle ON' : 'Shuffle OFF');
   }
 
   const shuffleQueue = (queue) => {
@@ -2298,7 +1869,7 @@ function App() {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-    setIsShuffleMode(true);
+    if (!isShuffleMode) toggleShuffle();
     playSong(shuffled[0], 0, shuffled)
     triggerToast('Shuffling tracks!')
   }
@@ -2456,7 +2027,7 @@ function App() {
             }
             mediaHandlersRef.current.setIsPlaying(false);
           });
-        } catch (e) { }
+        } catch (e) { console.error('Media session error:', e); }
       }
     }
   }, [currentTrack]);
@@ -2495,7 +2066,7 @@ function App() {
     });
 
     return () => {
-      listener.then(l => l.remove()).catch(() => { });
+      listener.then(l => l.remove()).catch(e => { console.error('Widget listener remove error:', e); });
     };
   }, []);
 
@@ -2788,6 +2359,8 @@ function App() {
                           className={`artist-song-row focusable ${isActive ? 'active-row' : ''}`}
                           tabIndex={0}
                           onClick={() => playSong(song, index, artistSongs)}
+                          onMouseEnter={() => prefetchSong(song)}
+                          onFocus={() => prefetchSong(song)}
                         >
                           <div className="row-index">
                             {isActive && isPlaying ? (
@@ -2876,6 +2449,8 @@ function App() {
                     className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                     tabIndex={0}
                     onClick={() => playSong(song, idx, (window.defaultSongs || []).slice(0, 50))}
+                    onMouseEnter={() => prefetchSong(song)}
+                    onFocus={() => prefetchSong(song)}
                   >
                     <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                       <img
@@ -3158,6 +2733,8 @@ function App() {
                         className={`playlist-song-item focusable ${isActive ? 'active-track' : ''}`}
                         tabIndex={0}
                         onClick={() => playSong(song, idx, selectedSaavnPlaylist.songs)}
+                        onMouseEnter={() => prefetchSong(song)}
+                        onFocus={() => prefetchSong(song)}
                       >
                         <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                           <img
@@ -3371,6 +2948,8 @@ function App() {
                           className={`search-result-item focusable ${currentTrack?.id === song.id ? 'active-track' : ''}`}
                           tabIndex={0}
                           onClick={() => playSong(song, index, searchResults)}
+                          onMouseEnter={() => prefetchSong(song)}
+                          onFocus={() => prefetchSong(song)}
                         >
                           <img src={song.img} alt={song.title} className="search-result-img" />
                           <div className="search-result-info">
@@ -3455,6 +3034,8 @@ function App() {
                       className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                       tabIndex={0}
                       onClick={() => playSong(song, idx, getLikedSongsList())}
+                      onMouseEnter={() => prefetchSong(song)}
+                      onFocus={() => prefetchSong(song)}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                     >
                       <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -3689,6 +3270,8 @@ function App() {
                       className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                       tabIndex={0}
                       onClick={() => playSong(song, idx, (selectedPlaylist.songs || []))}
+                      onMouseEnter={() => prefetchSong(song)}
+                      onFocus={() => prefetchSong(song)}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                     >
                       <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -4122,7 +3705,7 @@ function App() {
             <div className="d-np-queue-header">UP NEXT</div>
             <div className="d-np-queue-list hide-scrollbar">
               {getUpcomingSongs().map(({ song, queueIndex }, idx) => (
-                <div key={song.id || idx} className="d-np-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)}>
+                <div key={song.id || idx} className="d-np-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)} onMouseEnter={() => prefetchSong(song)} onFocus={() => prefetchSong(song)}>
                   <img
                     src={getSongImage(song)}
                     alt={song.title}
@@ -4370,7 +3953,7 @@ function App() {
                     <div style={{ padding: '20px 8px', color: 'rgba(255,255,255,0.4)', fontSize: '13px', textAlign: 'center' }}>No more songs in queue</div>
                   ) : (
                     getUpcomingSongs().map(({ song, queueIndex }, i) => (
-                      <div key={song.id || i} className="d-np-queue-item focusable" tabIndex={0} onClick={() => { playSong(song, queueIndex, activePlaybackQueue); setShowUpNext(false); }}>
+                      <div key={song.id || i} className="d-np-queue-item focusable" tabIndex={0} onClick={() => { playSong(song, queueIndex, activePlaybackQueue); setShowUpNext(false); }} onMouseEnter={() => prefetchSong(song)} onFocus={() => prefetchSong(song)}>
                         <img src={getSongImage(song)} alt="thumb" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
                         <div className="d-np-queue-text" style={{ flex: 1, marginLeft: '10px' }}>
                           <div className="d-np-queue-title" style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>{song.title}</div>
@@ -4734,7 +4317,7 @@ function App() {
                   <div className="fullscreen-queue-header">UP NEXT</div>
                   <div className="fullscreen-queue-list hide-scrollbar">
                     {getUpcomingSongs().map(({ song, queueIndex }, idx) => (
-                      <div key={song.id || idx} className="fullscreen-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)}>
+                      <div key={song.id || idx} className="fullscreen-queue-item focusable" tabIndex={0} onClick={() => playSong(song, queueIndex, activePlaybackQueue)} onMouseEnter={() => prefetchSong(song)} onFocus={() => prefetchSong(song)}>
                         <img
                           src={getSongImage(song)}
                           alt={song.title}

@@ -1,8 +1,11 @@
 import React from 'react';
 import './Carousel.css';
 import { Play, Pause } from 'lucide-react';
+import { usePlayer } from '../contexts/PlayerContext';
 
 const SuggestedSongsList = ({ songs = [], onSongPlay, currentTrack, isPlaying, hasActivity }) => {
+  const { prefetchSong } = usePlayer();
+
   // Fallback image if local path is broken
   const getSongImage = (song) => {
     if (song.img && !song.img.startsWith('images/')) {
@@ -26,6 +29,8 @@ const SuggestedSongsList = ({ songs = [], onSongPlay, currentTrack, isPlaying, h
               className={`carousel-card song-card ${isActive ? 'active-suggested-card' : ''}`} 
               style={{ boxShadow: 'none', cursor: 'pointer' }} 
               onClick={() => onSongPlay(song, idx, songs)}
+              onMouseEnter={() => prefetchSong(song)}
+              onFocus={() => prefetchSong(song)}
             >
               <div style={{ position: 'relative' }}>
                 <img 

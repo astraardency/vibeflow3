@@ -45,7 +45,7 @@ export const PlayerProvider = ({ children }) => {
   const audioRef = useRef(null);
   
   const { 
-    isLocalDeviceActive, sendCommand, incomingCommand, broadcastState, remotePlaybackState 
+    isLocalDeviceActive, sendCommand, incomingCommand, broadcastState, remotePlaybackState, syncQueue 
   } = useDeviceConnect();
 
   // Process incoming remote commands
@@ -66,18 +66,52 @@ export const PlayerProvider = ({ children }) => {
           playPreviousSong();
           break;
         case 'PLAY_SONG':
-          playSong(payload.song, payload.index);
+          playSong(payload.song, payload.index, payload.queueToUse);
           break;
       }
     }
   }, [incomingCommand, isLocalDeviceActive]);
 
+  // Throttle refs for broadcast
+  const lastBroadcastRef = useRef(0);
+  const lastBroadcastStateRef = useRef({ isPlaying: null, currentTrack: null });
+
   // Broadcast state to other devices
   useEffect(() => {
-    if (isLocalDeviceActive) {
+    if (!isLocalDeviceActive) return;
+
+    const now = Date.now();
+    const trackChanged = currentTrack !== lastBroadcastStateRef.current.currentTrack;
+    const playStateChanged = isPlaying !== lastBroadcastStateRef.current.isPlaying;
+    
+    // Broadcast if state changed or every 10 seconds for sync
+    if (trackChanged || playStateChanged || (now - lastBroadcastRef.current > 10000)) {
       broadcastState(isPlaying, currentTrack, currentTime);
+      lastBroadcastRef.current = now;
+      lastBroadcastStateRef.current = { isPlaying, currentTrack };
     }
   }, [isPlaying, currentTrack, currentTime, isLocalDeviceActive]);
+
+  // Sync queue to Firebase when local device changes it
+  useEffect(() => {
+    if (isLocalDeviceActive && syncQueue) {
+      syncQueue(activePlaybackQueue, currentTrackIndex);
+    }
+  }, [activePlaybackQueue, currentTrackIndex, isLocalDeviceActive, syncQueue]);
+
+  // Sync remote state to local state when acting as remote
+  useEffect(() => {
+    if (!isLocalDeviceActive) {
+      setCurrentTime(remotePlaybackState.currentTime || 0);
+      if (remotePlaybackState.currentTrack?.duration) {
+        setDuration(parseInt(remotePlaybackState.currentTrack.duration, 10) || 0);
+      }
+      if (remotePlaybackState.queue && remotePlaybackState.queue.length > 0) {
+        setActivePlaybackQueue(remotePlaybackState.queue);
+        setCurrentTrackIndex(remotePlaybackState.queueIndex ?? -1);
+      }
+    }
+  }, [isLocalDeviceActive, remotePlaybackState.currentTime, remotePlaybackState.currentTrack, remotePlaybackState.queue, remotePlaybackState.queueIndex]);
 
   // Take over playback when we become the active device
   const wasLocalDeviceActiveRef = useRef(isLocalDeviceActive);
@@ -154,7 +188,10 @@ export const PlayerProvider = ({ children }) => {
 
   const playSong = async (song, index = -1, queueToUse = null, callbacks = {}, startTime = null) => {
     if (!isLocalDeviceActive) {
-      sendCommand('PLAY_SONG', { song, index });
+      const safeQueue = queueToUse ? queueToUse.map(s => ({
+        id: s.id, title: s.title, artist: s.artist, img: s.img, duration: s.duration, audioUrl: s.audioUrl || ''
+      })).slice(0, 50) : null;
+      sendCommand('PLAY_SONG', { song, index, queueToUse: safeQueue });
       return;
     }
     try {
@@ -281,6 +318,39 @@ export const PlayerProvider = ({ children }) => {
 
   const toggleShuffle = () => setIsShuffleMode(!isShuffleMode);
 
+  // Keep track of already preloaded URLs in this session to prevent duplicate browser preloads
+  const preloadedUrls = useRef(new Set());
+
+  const preloadAudioFile = useCallback((url) => {
+    if (!url || preloadedUrls.current.has(url) || url.startsWith('file://') || url.startsWith('blob:')) return;
+    try {
+      preloadedUrls.current.add(url);
+      const audio = new Audio();
+      audio.src = url;
+      audio.preload = 'auto';
+      audio.volume = 0;
+      audio.load();
+    } catch (err) {
+      console.warn("Audio preloading failed:", err);
+    }
+  }, []);
+
+  const prefetchSong = useCallback(async (song) => {
+    if (!song) return;
+    try {
+      if (!song.audioUrl || song.audioUrl.includes('audio_url_') || song.audioUrl.includes('placeholder_url')) {
+        const playableResult = await getPlayableStreamForSong(song);
+        if (playableResult && playableResult.audioUrl) {
+          preloadAudioFile(playableResult.audioUrl);
+        }
+      } else {
+        preloadAudioFile(song.audioUrl);
+      }
+    } catch (e) {
+      console.warn("Failed to prefetch song:", e);
+    }
+  }, [preloadAudioFile]);
+
   const value = {
     audioRef,
     currentTrack: isLocalDeviceActive ? currentTrack : remotePlaybackState.currentTrack, 
@@ -288,7 +358,7 @@ export const PlayerProvider = ({ children }) => {
     isPlaying: isLocalDeviceActive ? isPlaying : remotePlaybackState.isPlaying, 
     setIsPlaying,
     isLoadingSong,
-    currentTime: isLocalDeviceActive ? currentTime : remotePlaybackState.currentTime, 
+    currentTime: currentTime,
     setCurrentTime,
     duration, setDuration,
     isShuffleMode, toggleShuffle,
@@ -298,7 +368,9 @@ export const PlayerProvider = ({ children }) => {
     playSong,
     playNextSong,
     playPreviousSong,
-    togglePlay
+    togglePlay,
+    prefetchSong,
+    preloadAudioFile
   };
 
   return (
