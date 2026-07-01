@@ -33,6 +33,7 @@ public class AudioForegroundService extends Service {
     public static final String ACTION_NEXT = "ACTION_NEXT";
     public static final String ACTION_PREV = "ACTION_PREV";
     public static final String ACTION_TOGGLE = "ACTION_TOGGLE";
+    public static final String ACTION_RESUME = "ACTION_RESUME";
     public static final String ACTION_SEEK = "ACTION_SEEK";
     public static final String ACTION_SET_VOLUME = "ACTION_SET_VOLUME";
     
@@ -187,6 +188,23 @@ public class AudioForegroundService extends Service {
                         updateMediaSessionState();
                         updateWidget();
                         sendStateBroadcast("paused", false);
+                    }
+                    break;
+                case ACTION_RESUME:
+                    if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+                        if (currentUrl.isEmpty()) {
+                            if (loadLastTrack()) {
+                                loadCoverAndPlay();
+                                break;
+                            }
+                        }
+                        if (!currentUrl.isEmpty()) {
+                            mediaPlayer.start();
+                            updateNotification();
+                            updateMediaSessionState();
+                            updateWidget();
+                            sendStateBroadcast("playing", false);
+                        }
                     }
                     break;
                 case ACTION_TOGGLE:

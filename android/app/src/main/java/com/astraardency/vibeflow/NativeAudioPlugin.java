@@ -102,6 +102,14 @@ public class NativeAudioPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void resume(PluginCall call) {
+        Intent intent = new Intent(getContext(), AudioForegroundService.class);
+        intent.setAction(AudioForegroundService.ACTION_RESUME);
+        getContext().startService(intent);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void seek(PluginCall call) {
         Integer time = call.getInt("time");
         if (time != null) {

@@ -160,14 +160,15 @@ export const PlayerProvider = ({ children }) => {
   }, [activePlaybackQueue]);
 
   const togglePlay = (forcePlay) => {
+    const isForcePlayBool = typeof forcePlay === 'boolean';
     if (!isLocalDeviceActive) {
-      const stateToSet = forcePlay !== undefined ? forcePlay : !remotePlaybackState.isPlaying;
+      const stateToSet = isForcePlayBool ? forcePlay : !remotePlaybackState.isPlaying;
       sendCommand(stateToSet ? 'PLAY' : 'PAUSE');
       return;
     }
     
     if (currentTrack) {
-      const shouldPlay = forcePlay !== undefined ? forcePlay : !isPlaying;
+      const shouldPlay = isForcePlayBool ? forcePlay : !isPlaying;
       if (!shouldPlay) {
         if (Capacitor.isNativePlatform()) {
           NativeAudio.pause();
