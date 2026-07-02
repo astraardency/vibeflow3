@@ -3,6 +3,9 @@ import { doc, setDoc, updateDoc, onSnapshot, query, collection, where, getDocs, 
 import { db } from '../services/firebase';
 import { useAuth } from './AuthContext';
 import { usePlayer } from './PlayerContext';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+const NativeAudio = registerPlugin('NativeAudio');
 
 const LiveConnectContext = createContext();
 
@@ -91,6 +94,11 @@ export const LiveConnectProvider = ({ children }) => {
     }
   };
 
+  const currentStateRef = useRef({ currentTrack, isPlaying, currentTime });
+  useEffect(() => {
+    currentStateRef.current = { currentTrack, isPlaying, currentTime };
+  }, [currentTrack, isPlaying, currentTime]);
+
   const subscribeToLiveSession = (sessionId, role) => {
     if (liveConnectRef.current) liveConnectRef.current();
     const unsub = onSnapshot(doc(db, 'live_sessions', sessionId), (snap) => {
@@ -101,18 +109,24 @@ export const LiveConnectProvider = ({ children }) => {
       setLiveGuestCount(data.guestCount || 0);
       
       if (role === 'guest' && !isBroadcastingRef.current) {
-        if (data.currentTrack && data.currentTrack.id !== currentTrack?.id) {
+        const { currentTrack: localTrack, isPlaying: localIsPlaying, currentTime: localTime } = currentStateRef.current;
+        
+        if (data.currentTrack && data.currentTrack.id !== localTrack?.id) {
           playSong(data.currentTrack);
         }
-        if (typeof data.currentTime === 'number' && audioRef.current && Math.abs(audioRef.current.currentTime - data.currentTime) > 3) {
-          if (audioRef.current) audioRef.current.currentTime = data.currentTime;
+        if (typeof data.currentTime === 'number' && Math.abs(localTime - data.currentTime) > 3) {
+          if (Capacitor.isNativePlatform()) {
+            NativeAudio.seek({ time: data.currentTime }).catch(() => {});
+          } else if (audioRef.current) {
+            audioRef.current.currentTime = data.currentTime;
+          }
         }
-        if (data.isPlaying !== isPlaying) {
+        if (data.isPlaying !== localIsPlaying) {
           if (data.isPlaying) {
-            audioRef.current?.play?.().catch(() => { });
+            if (Capacitor.isNativePlatform()) { NativeAudio.resume(); } else { audioRef.current?.play?.().catch(() => { }); }
             setIsPlaying(true);
           } else {
-            audioRef.current?.pause?.();
+            if (Capacitor.isNativePlatform()) { NativeAudio.pause(); } else { audioRef.current?.pause?.(); }
             setIsPlaying(false);
           }
         }
@@ -121,26 +135,37 @@ export const LiveConnectProvider = ({ children }) => {
     liveConnectRef.current = unsub;
   };
 
-  const broadcastLiveState = useCallback(async () => {
-    if (!liveSessionId || liveSessionRole !== 'host' || !isLiveConnected) return;
-    isBroadcastingRef.current = true;
-    try {
-      await updateDoc(doc(db, 'live_sessions', liveSessionId), {
-        currentTrack: currentTrack || null,
-        isPlaying,
-        currentTime,
-        updatedAt: Date.now()
-      });
-    } catch (e) { console.error('Broadcast error:', e); }
-    setTimeout(() => { isBroadcastingRef.current = false; }, 500);
-  }, [liveSessionId, liveSessionRole, isLiveConnected, currentTrack, isPlaying, currentTime]);
+  const lastSyncTime = useRef(0);
+  const lastSyncTrack = useRef(null);
+  const lastSyncState = useRef(null);
 
   useEffect(() => {
-    if (liveSessionRole === 'host' && isLiveConnected) {
-      const t = setTimeout(broadcastLiveState, 300);
-      return () => clearTimeout(t);
+    if (liveSessionRole !== 'host' || !isLiveConnected) return;
+    
+    const isTrackChanged = currentTrack?.id !== lastSyncTrack.current?.id;
+    const isStateChanged = isPlaying !== lastSyncState.current;
+    const isTimeDrift = Math.abs(currentTime - lastSyncTime.current) > 10;
+    
+    if (isTrackChanged || isStateChanged || isTimeDrift) {
+      lastSyncTrack.current = currentTrack;
+      lastSyncState.current = isPlaying;
+      lastSyncTime.current = currentTime;
+      
+      const sync = async () => {
+        isBroadcastingRef.current = true;
+        try {
+          await updateDoc(doc(db, 'live_sessions', liveSessionId), {
+            currentTrack: currentTrack || null,
+            isPlaying,
+            currentTime,
+            updatedAt: Date.now()
+          });
+        } catch (e) { console.error('Broadcast error:', e); }
+        setTimeout(() => { isBroadcastingRef.current = false; }, 500);
+      };
+      sync();
     }
-  }, [currentTrack, isPlaying, broadcastLiveState, liveSessionRole, isLiveConnected]);
+  }, [currentTime, currentTrack, isPlaying, liveSessionRole, isLiveConnected, liveSessionId]);
 
   const disconnectLiveSession = async (triggerToast) => {
     if (liveConnectRef.current) { liveConnectRef.current(); liveConnectRef.current = null; }

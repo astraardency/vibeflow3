@@ -12,7 +12,7 @@ import { doc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 const SearchContainer = () => {
   const { triggerToast } = useAppContext();
   const { playlists, setPlaylists } = usePlaylists();
-  const { currentTrack, isPlaying, playSong, setIsShuffleMode } = usePlayer();
+  const { currentTrack, isPlaying, playSong, toggleShuffle, isShuffleMode } = usePlayer();
   const { savedPlaylistIds, setSavedPlaylistIds, currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,7 +93,7 @@ const SearchContainer = () => {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-    setIsShuffleMode(true);
+    if (!isShuffleMode) toggleShuffle();
     playSong(shuffled[0], 0, shuffled)
     triggerToast('Shuffling tracks!')
   }

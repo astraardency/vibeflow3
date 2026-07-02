@@ -23,6 +23,8 @@ const fetchWithRetry = async (path, maxRetries = 1) => {
         if (response.ok) {
           const data = await response.json();
           if (data && data.success !== false) return data;
+        } else {
+          throw new Error(`HTTP Error ${response.status}`);
         }
       } catch (err) {
         if (attempt === maxRetries && endpointIdx === API_ENDPOINTS.length - 1) throw err;

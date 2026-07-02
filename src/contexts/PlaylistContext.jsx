@@ -85,7 +85,12 @@ export const PlaylistProvider = ({ children }) => {
 
       // Only update localStorage with what we just discovered (don't erase existing)
       const existingRaw = localStorage.getItem('savedPlaylistIds');
-      const existing = existingRaw ? (JSON.parse(existingRaw) || []) : [];
+      let existing = [];
+      try {
+        existing = existingRaw ? (JSON.parse(existingRaw) || []) : [];
+      } catch (e) {
+        existing = [];
+      }
       const newlyFound = ownedIds.filter(id => !existing.includes(id));
 
       if (newlyFound.length > 0) {
@@ -122,7 +127,12 @@ export const PlaylistProvider = ({ children }) => {
       if (ownedIds.length === 0) return;
 
       const existingRaw = localStorage.getItem('savedPlaylistIds');
-      const existing = existingRaw ? (JSON.parse(existingRaw) || []) : [];
+      let existing = [];
+      try {
+        existing = existingRaw ? (JSON.parse(existingRaw) || []) : [];
+      } catch (e) {
+        existing = [];
+      }
       const newlyFound = ownedIds.filter(id => !existing.includes(id));
 
       if (newlyFound.length > 0) {

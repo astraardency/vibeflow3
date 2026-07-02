@@ -32,7 +32,12 @@ app.get('/api/*', async (req, res) => {
 
   try {
     // 1. Check Redis Cache
-    const cachedData = await redisClient.get(cacheKey);
+    let cachedData = null;
+    try {
+      cachedData = await redisClient.get(cacheKey);
+    } catch (redisError) {
+      console.warn(`Redis get error: ${redisError.message}`);
+    }
     
     if (cachedData) {
       console.log(`[Cache Hit] ${path}`);
@@ -51,7 +56,11 @@ app.get('/api/*', async (req, res) => {
         ttl = 1800; // 30 minutes for details
     }
 
-    await redisClient.setEx(cacheKey, ttl, JSON.stringify(data));
+    try {
+      await redisClient.setEx(cacheKey, ttl, JSON.stringify(data));
+    } catch (redisError) {
+      console.warn(`Redis set error: ${redisError.message}`);
+    }
 
     // 4. Send Response
     res.json(data);

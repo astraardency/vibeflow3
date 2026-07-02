@@ -160,6 +160,15 @@ export const PlayerProvider = ({ children }) => {
   }, [activePlaybackQueue]);
 
   const togglePlay = (forcePlay) => {
+    if (!currentTrack) {
+      if (activePlaybackQueue && activePlaybackQueue.length > 0) {
+        playSong(activePlaybackQueue[0], 0);
+      } else if (window.defaultSongs && window.defaultSongs.length > 0) {
+        playSong(window.defaultSongs[0], 0);
+      }
+      return;
+    }
+
     const isForcePlayBool = typeof forcePlay === 'boolean';
     if (!isLocalDeviceActive) {
       const stateToSet = isForcePlayBool ? forcePlay : !remotePlaybackState.isPlaying;

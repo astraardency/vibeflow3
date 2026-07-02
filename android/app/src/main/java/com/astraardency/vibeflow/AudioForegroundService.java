@@ -271,32 +271,43 @@ public class AudioForegroundService extends Service {
 
     private void loadCoverAndPlay() {
         new Thread(() -> {
+            HttpURLConnection connection = null;
             try {
                 if (currentCoverUrl != null && !currentCoverUrl.isEmpty()) {
                     URL url = new URL(currentCoverUrl);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection = (HttpURLConnection) url.openConnection();
                     connection.setDoInput(true);
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
                     connection.connect();
-                    InputStream input = connection.getInputStream();
-                    currentCoverBitmap = BitmapFactory.decodeStream(input);
+                    try (InputStream input = connection.getInputStream()) {
+                        currentCoverBitmap = BitmapFactory.decodeStream(input);
+                    }
                 } else {
                     currentCoverBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
                 }
             } catch (IOException e) {
                 currentCoverBitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
             
-            updateMediaSessionState();
-
-            try {
-                mediaPlayer.reset();
-                if (currentUrl != null && !currentUrl.isEmpty()) {
-                    mediaPlayer.setDataSource(currentUrl);
-                    mediaPlayer.prepareAsync();
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                updateMediaSessionState();
+                try {
+                    if (mediaPlayer != null) {
+                        mediaPlayer.reset();
+                        if (currentUrl != null && !currentUrl.isEmpty()) {
+                            mediaPlayer.setDataSource(currentUrl);
+                            mediaPlayer.prepareAsync();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            });
         }).start();
     }
 
@@ -356,11 +367,24 @@ public class AudioForegroundService extends Service {
                                 URL url = new URL("https://saavn.sumit.co/api/songs/" + id);
                                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                                 conn.setRequestMethod("GET");
-                                InputStream in = conn.getInputStream();
-                                java.util.Scanner scanner = new java.util.Scanner(in).useDelimiter("\\A");
-                                String response = scanner.hasNext() ? scanner.next() : "";
-                                org.json.JSONObject json = new org.json.JSONObject(response);
-                                if (json.optBoolean("success")) {
+                                conn.setConnectTimeout(5000);
+                                conn.setReadTimeout(5000);
+                                String response = "";
+                                try (InputStream in = conn.getInputStream();
+                                     java.util.Scanner scanner = new java.util.Scanner(in).useDelimiter("\\A")) {
+                                    response = scanner.hasNext() ? scanner.next() : "";
+                                } finally {
+                                    conn.disconnect();
+                                }
+                                org.json.JSONObject json = null;
+                                try {
+                                    if (!response.trim().isEmpty() && response.trim().startsWith("{")) {
+                                        json = new org.json.JSONObject(response);
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                if (json != null && json.optBoolean("success")) {
                                     org.json.JSONArray data = json.optJSONArray("data");
                                     if (data != null && data.length() > 0) {
                                         org.json.JSONObject songData = data.getJSONObject(0);
@@ -398,11 +422,24 @@ public class AudioForegroundService extends Service {
                                 URL url = new URL("https://saavn.sumit.co/api/search/songs?query=" + java.net.URLEncoder.encode(query, "UTF-8") + "&limit=3");
                                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                                 conn.setRequestMethod("GET");
-                                InputStream in = conn.getInputStream();
-                                java.util.Scanner scanner = new java.util.Scanner(in).useDelimiter("\\A");
-                                String response = scanner.hasNext() ? scanner.next() : "";
-                                org.json.JSONObject json = new org.json.JSONObject(response);
-                                if (json.optBoolean("success")) {
+                                conn.setConnectTimeout(5000);
+                                conn.setReadTimeout(5000);
+                                String response = "";
+                                try (InputStream in = conn.getInputStream();
+                                     java.util.Scanner scanner = new java.util.Scanner(in).useDelimiter("\\A")) {
+                                    response = scanner.hasNext() ? scanner.next() : "";
+                                } finally {
+                                    conn.disconnect();
+                                }
+                                org.json.JSONObject json = null;
+                                try {
+                                    if (!response.trim().isEmpty() && response.trim().startsWith("{")) {
+                                        json = new org.json.JSONObject(response);
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                if (json != null && json.optBoolean("success")) {
                                     org.json.JSONObject data = json.optJSONObject("data");
                                     if (data != null) {
                                         org.json.JSONArray results = data.optJSONArray("results");
@@ -565,21 +602,28 @@ public class AudioForegroundService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
     
-    private void startProgressUpdate() {
-        new Thread(() -> {
-            while (mediaPlayer != null) {
-                if (mediaPlayer.isPlaying()) {
-                    Intent intent = new Intent(BROADCAST_PROGRESS);
-                    intent.putExtra("time", mediaPlayer.getCurrentPosition() / 1000);
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-                }
+    private android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable progressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mediaPlayer != null) {
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    break;
+                    if (mediaPlayer.isPlaying()) {
+                        Intent intent = new Intent(BROADCAST_PROGRESS);
+                        intent.putExtra("time", mediaPlayer.getCurrentPosition() / 1000);
+                        LocalBroadcastManager.getInstance(AudioForegroundService.this).sendBroadcast(intent);
+                    }
+                } catch (IllegalStateException e) {
+                    // Ignore, mediaPlayer might be in an invalid state
                 }
             }
-        }).start();
+            progressHandler.postDelayed(this, 1000);
+        }
+    };
+
+    private void startProgressUpdate() {
+        progressHandler.removeCallbacks(progressRunnable);
+        progressHandler.postDelayed(progressRunnable, 1000);
     }
 
     private void createNotificationChannel() {
@@ -605,6 +649,9 @@ public class AudioForegroundService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (progressHandler != null) {
+            progressHandler.removeCallbacks(progressRunnable);
+        }
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mediaPlayer = null;

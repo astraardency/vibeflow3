@@ -10,12 +10,12 @@ import './TVApp.css';
 
 export default function TVApp() {
   useSpatialNavigation();
-  const { currentUser, isUserDataLoaded, likedSongs, listeningActivity, playsCount } = useAuth();
+  const { currentUser, isUserDataLoaded, likedSongs, listeningActivity = [], playsCount } = useAuth() || {};
   const { 
     currentTrack, isPlaying, togglePlay, playNextSong, playPreviousSong, 
     currentTime, duration, playSong, activePlaybackQueue, prefetchSong
-  } = usePlayer();
-  const { playlists } = usePlaylists();
+  } = usePlayer() || {};
+  const { playlists = [] } = usePlaylists() || {};
   
   const [activeTab, setActiveTab] = useState('home'); // home, search, library, account, player
   const [tvSessionId, setTvSessionId] = useState('');
@@ -259,9 +259,9 @@ export default function TVApp() {
               className="tv-focusable" 
               tabIndex="0"
               style={{ marginLeft: '40px', padding: '15px 40px', background: '#fff', color: '#000', borderRadius: '30px', border: 'none', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer' }}
-              onClick={() => playSong(heroPlaylist.songs[0], 0, heroPlaylist.songs)}
-              onKeyDown={(e) => e.key === 'Enter' && playSong(heroPlaylist.songs[0], 0, heroPlaylist.songs)}
-              onFocus={() => prefetchSong(heroPlaylist.songs[0])}
+              onClick={() => playSong(heroPlaylist.songs?.[0], 0, heroPlaylist.songs || [])}
+              onKeyDown={(e) => e.key === 'Enter' && playSong(heroPlaylist.songs?.[0], 0, heroPlaylist.songs || [])}
+              onFocus={() => { if (heroPlaylist.songs?.[0]) prefetchSong(heroPlaylist.songs[0]) }}
             >
               Play
             </button>
@@ -276,9 +276,9 @@ export default function TVApp() {
                 key={idx} 
                 className="tv-card tv-focusable" 
                 tabIndex="0"
-                onClick={() => playSong(pl.songs[0], 0, pl.songs)}
-                onKeyDown={(e) => e.key === 'Enter' && playSong(pl.songs[0], 0, pl.songs)}
-                onFocus={() => prefetchSong(pl.songs[0])}
+                onClick={() => playSong(pl.songs?.[0], 0, pl.songs || [])}
+                onKeyDown={(e) => e.key === 'Enter' && playSong(pl.songs?.[0], 0, pl.songs || [])}
+                onFocus={() => { if (pl.songs?.[0]) prefetchSong(pl.songs[0]) }}
               >
                 <img src={pl.img || pl.image || '/assets/default_playlist.png'} alt={pl.name} />
                 <h3>{pl.name}</h3>

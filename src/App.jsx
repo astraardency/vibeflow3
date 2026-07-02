@@ -626,7 +626,7 @@ function App() {
   const callbacksRef = useRef({});
   useEffect(() => {
     callbacksRef.current = {
-      playNextSong, playPreviousSong, onAudioEnded, prefetchNextTrack, onTrackChanged: (data) => {
+      playNextSong, playPreviousSong, onAudioEnded: undefined, prefetchNextTrack: undefined, onTrackChanged: (data) => {
         const { index } = data;
         if (activePlaybackQueue && activePlaybackQueue[index]) {
           setCurrentTrack(activePlaybackQueue[index]);
@@ -634,7 +634,7 @@ function App() {
         }
       }
     };
-  });
+  }, [playNextSong, playPreviousSong, activePlaybackQueue, setCurrentTrack, setCurrentTrackIndex]);
 
   // Sync NativeAudio queue whenever activePlaybackQueue is updated
   useEffect(() => {
@@ -1690,16 +1690,24 @@ function App() {
     }
   }
 
+  const playlistSearchCounter = useRef(0);
+
   const handlePlaylistSearch = async (e, query = playlistSearchQuery) => {
-    if (e) e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
     if (!query.trim()) {
       setPlaylistSearchResults([])
       return
     }
     setIsSearchingPlaylistSongs(true)
+    playlistSearchCounter.current += 1;
+    const currentSearchId = playlistSearchCounter.current;
+    
     const results = await searchSongs(query)
-    setPlaylistSearchResults(results)
-    setIsSearchingPlaylistSongs(false)
+    
+    if (playlistSearchCounter.current === currentSearchId) {
+      setPlaylistSearchResults(results)
+      setIsSearchingPlaylistSongs(false)
+    }
   }
 
   // Search action
