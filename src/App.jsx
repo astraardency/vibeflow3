@@ -28,6 +28,9 @@ import { useAuth } from './contexts/AuthContext'
 import { usePlayer } from './contexts/PlayerContext'
 import { useLiveConnect } from './contexts/LiveConnectContext'
 
+import { usePlaylists } from './contexts/PlaylistContext';
+import AsyncArtistImage from './components/AsyncArtistImage';
+
 import DownloadContainer from './components/DownloadContainer'
 import './App.css'
 
@@ -3511,18 +3514,23 @@ function App() {
             {(() => {
               const getArtistImage = (name) => {
                 const nameLower = name.toLowerCase();
-                if (nameLower.includes('rahman')) return 'https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('anirudh')) return 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f924?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('yuvan')) return 'https://images.unsplash.com/photo-1516280440502-69da0ce5e913?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('harris')) return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('ilaiyaraaja') || nameLower.includes('ilayaraja')) return 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('deva')) return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=200&auto=format&fit=crop';
-                if (nameLower.includes('santhosh narayanan')) return 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f924?q=80&w=200&auto=format&fit=crop';
+                if (nameLower.includes('deva')) return 'https://i.pinimg.com/736x/d2/03/29/d20329dcc8e63d29a2c8ada710037aaf.jpg';
+                if (nameLower.includes('anirudh')) return 'https://i.pinimg.com/736x/d1/fd/23/d1fd230fec559c5c09c7c08651a2843a.jpg';
+                if (nameLower.includes('balasubra') || nameLower.includes('spb') || nameLower.includes('s.p.b')) return 'https://i.pinimg.com/1200x/fa/1c/72/fa1c72be17b0b9d1d8028384f4d1f809.jpg';
+                if (nameLower.includes('rahman')) return 'https://i.pinimg.com/1200x/9b/60/5c/9b605c223bd8a8eb82faf95b92c0df43.jpg';
+                if (nameLower.includes('harris')) return 'https://i.pinimg.com/736x/e3/bf/48/e3bf485d75d83bdb46a9efeea3e3f8ef.jpg';
+                if (nameLower.includes('yuvan')) return 'https://i.pinimg.com/736x/3b/65/3e/3b653e7e03078eda8712b5923d831bbc.jpg';
+                if (nameLower.includes('sai')) return 'https://i.pinimg.com/736x/e8/d8/87/e8d88776ff92d9e8983d7dc642ba4084.jpg';
+                if (nameLower.includes('mano')) return 'https://i.pinimg.com/736x/46/2c/f3/462cf3c05551400733901d24799955a3.jpg';
+                if (nameLower.includes('hariharan')) return 'https://i.pinimg.com/736x/fb/ba/1c/fbba1c1859f29f4623f474409135ee22.jpg';
+                if (nameLower.includes('g.v.prakash') || nameLower.includes('g. v. prakash') || nameLower.includes('g.v. prakash') || nameLower.includes('g v prakash')) return 'https://i.pinimg.com/736x/fd/e1/59/fde1596a79567a7e9e67b098ad4b6537.jpg';
+                if (nameLower.includes('ilaiyaraaja') || nameLower.includes('ilayaraja')) return 'https://c.saavncdn.com/artists/Ilaiyaraaja_20230828071840_500x500.jpg';
+                if (nameLower.includes('santhosh narayanan')) return 'https://c.saavncdn.com/artists/Santhosh_Narayanan_500x500.jpg';
                 if (nameLower.includes('hiphop') || nameLower.includes('tamizha')) return 'https://i.pinimg.com/736x/10/51/d2/1051d2538a3355b6873fedc75e844bc8.jpg';
-                return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200&auto=format&fit=crop';
+                return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop';
               };
 
-              const sortedArtists = Object.entries(artistPlays)
+              const sortedArtists = Object.entries(artistPlays || {})
                 .filter(([k]) => k && k.trim() !== '' && k !== 'undefined')
                 .sort(([, a], [, b]) => b - a);
               const topArtist = sortedArtists.length > 0
@@ -3537,7 +3545,7 @@ function App() {
 
                     <div style={{ position: 'relative', width: '140px', height: '140px', margin: '0 auto', marginBottom: '16px' }}>
                       <div style={{ position: 'absolute', inset: '-4px', background: 'linear-gradient(45deg, #ff7b00, #ff0055)', borderRadius: '50%', filter: 'blur(8px)', opacity: 0.6 }}></div>
-                      <img src={topArtist.img} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--card-bg, white)' }} alt={topArtist.name} />
+                      <AsyncArtistImage artistName={topArtist.name} fallbackImg={topArtist.img} style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--card-bg, white)' }} alt={topArtist.name} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop'; }} />
                     </div>
 
                     <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text-color, #000)', marginBottom: '12px' }}>{topArtist.name}</h2>
@@ -3615,7 +3623,7 @@ function App() {
                     return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop';
                   };
 
-                  const sorted = Object.entries(artistPlays)
+                  const sorted = Object.entries(artistPlays || {})
                     .sort(([, a], [, b]) => b - a)
                     .slice(0, showAllComposers ? undefined : 5)
                     .map(([name, count]) => ({
@@ -3653,7 +3661,7 @@ function App() {
                       scrollSnapAlign: 'start',
                       cursor: 'pointer'
                     }}>
-                      <img src={comp.img} alt={comp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <AsyncArtistImage artistName={comp.name} fallbackImg={comp.img} alt={comp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <div style={{
                         position: 'absolute',
                         inset: 0,

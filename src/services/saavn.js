@@ -114,6 +114,66 @@ export const searchSongs = async (query, limit = 40) => {
 };
 
 /**
+ * Searches for Artists from JioSaavn
+ * @param {string} query - The search term
+ * @param {number} limit - Number of results to return
+ * @returns {Promise<Array>} List of formatted artists
+ */
+export const searchArtists = async (query, limit = 5) => {
+  const cacheKey = `search_artist_${query}_${limit}`;
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey);
+  }
+
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.timestamp < 15 * 60 * 1000) { // 15 mins cache
+        searchCache.set(cacheKey, parsed.data);
+        return parsed.data;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const data = await fetchWithRetry(`/search/artists?query=${encodeURIComponent(query)}&limit=${limit}`);
+
+    if (data && data.data && data.data.results) {
+      const artists = data.data.results.map(artist => {
+        let imgUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200&auto=format&fit=crop';
+        if (artist.image && Array.isArray(artist.image) && artist.image.length > 0) {
+          imgUrl = artist.image[artist.image.length - 1].url || artist.image[artist.image.length - 1].link || imgUrl;
+        } else if (typeof artist.image === 'string') {
+          imgUrl = artist.image;
+        }
+        return {
+          id: artist.id,
+          name: decodeHTMLEntities(artist.name || artist.title || 'Unknown Artist'),
+          img: imgUrl,
+        };
+      });
+
+      searchCache.set(cacheKey, artists);
+      setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
+      
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: artists,
+          timestamp: Date.now()
+        }));
+      } catch (e) {}
+
+      return artists;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error searching artists:', error);
+    return [];
+  }
+};
+
+/**
  * Gets the best matching playable stream for a local song object
  * @param {Object} song - The local song object
  * @returns {Promise<Object|null>} The best matching saavn song
