@@ -117,6 +117,18 @@ export const AuthProvider = ({ children }) => {
                 lastRemoteState.current.savedPlaylistIds = fetched;
               }
             }
+          } else {
+            // Document doesn't exist, create it. This handles mobile web redirect flows 
+            // where AccountSettings unmounts before creating the document.
+            import('firebase/firestore').then(({ setDoc }) => {
+              setDoc(doc(db, 'users', activeUid), {
+                id: activeUid,
+                username: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
+                email: user.email || '',
+                preferences: { highQualityAudio: true, dataSaver: false, offlineMode: true },
+                joinDate: new Date().toISOString()
+              }).catch(err => console.error("Error creating user doc:", err));
+            });
           }
         }, (error) => {
           console.error("Error fetching user data in real-time:", error);
@@ -180,7 +192,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (Object.keys(changes).length > 0) {
-        updateDoc(doc(db, 'users', activeUid), changes).catch(err => console.error("Error syncing data:", err));
+        // Filter out any undefined values to prevent Firebase invalid-argument errors
+        const safeChanges = {};
+        Object.keys(changes).forEach(key => {
+          if (changes[key] !== undefined) {
+            safeChanges[key] = changes[key];
+          }
+        });
+
+        if (Object.keys(safeChanges).length > 0) {
+          updateDoc(doc(db, 'users', activeUid), safeChanges).catch(err => console.error("Error syncing data:", err));
+        }
       }
     }
   }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);

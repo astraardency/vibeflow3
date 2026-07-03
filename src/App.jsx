@@ -4135,18 +4135,19 @@ function App() {
           </div>
           <div className="d-player-center">
             <div className="d-player-controls">
-              <button className="d-player-icon-btn focusable" tabIndex={0} onClick={playPreviousSong}>
-                <SkipForward size={18} style={{ transform: 'rotate(180deg)' }} />
+              <button className="d-player-icon-btn focusable" tabIndex={0} onClick={playPreviousSong} onKeyDown={(e) => e.key === 'Enter' && playPreviousSong()}>
+                <SkipBack size={18} />
               </button>
               <button
                 className="focusable"
                 tabIndex={0}
-                style={{ backgroundColor: 'white', color: 'black', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', marginTop: '18px' }}
+                style={{ backgroundColor: 'white', color: 'black', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
                 onClick={togglePlay}
+                onKeyDown={(e) => e.key === 'Enter' && togglePlay()}
               >
                 {isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" style={{ marginLeft: '2px', marginTop: '1px' }} />}
               </button>
-              <button className="d-player-icon-btn focusable" tabIndex={0} onClick={playNextSong}>
+              <button className="d-player-icon-btn focusable" tabIndex={0} onClick={playNextSong} onKeyDown={(e) => e.key === 'Enter' && playNextSong()}>
                 <SkipForward size={18} />
               </button>
             </div>
@@ -4272,15 +4273,15 @@ function App() {
                       <Sparkles size={24} fill={isShuffleMode ? "var(--card-orange)" : "none"} color={isShuffleMode ? "var(--card-orange)" : "white"} />
                     </button>
 
-                    <button className="fullscreen-icon-btn" onClick={playPreviousSong}>
-                      <SkipForward size={28} style={{ transform: 'rotate(180deg)' }} />
+                    <button className="fullscreen-icon-btn focusable" tabIndex={0} onClick={playPreviousSong} onKeyDown={(e) => e.key === 'Enter' && playPreviousSong()}>
+                      <SkipBack size={28} />
                     </button>
 
-                    <button className="fullscreen-play-btn" onClick={togglePlay}>
+                    <button className="fullscreen-play-btn focusable" tabIndex={0} onClick={togglePlay} onKeyDown={(e) => e.key === 'Enter' && togglePlay()}>
                       {isPlaying ? <Pause size={32} fill="white" /> : <Play size={32} fill="white" style={{ marginLeft: '4px' }} />}
                     </button>
 
-                    <button className="fullscreen-icon-btn" onClick={playNextSong}>
+                    <button className="fullscreen-icon-btn focusable" tabIndex={0} onClick={playNextSong} onKeyDown={(e) => e.key === 'Enter' && playNextSong()}>
                       <SkipForward size={28} />
                     </button>
 
@@ -4782,13 +4783,13 @@ function App() {
             {currentTrack?.artist || 'Unknown Artist'}
           </div>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <button onClick={playPreviousSong} style={{ background: 'none', border: 'none', color: 'var(--text-color, #fff)', cursor: 'pointer', display: 'flex' }}>
-              <SkipForward size={22} style={{ transform: 'rotate(180deg)' }} />
+            <button className="focusable" tabIndex={0} onClick={playPreviousSong} onKeyDown={(e) => e.key === 'Enter' && playPreviousSong()} style={{ background: 'none', border: 'none', color: 'var(--text-color, #fff)', cursor: 'pointer', display: 'flex' }}>
+              <SkipBack size={22} />
             </button>
-            <button onClick={togglePlay} style={{ background: 'var(--card-orange, #f5954a)', border: 'none', color: 'white', width: '48px', height: '48px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245, 149, 74, 0.4)' }}>
+            <button className="focusable" tabIndex={0} onClick={togglePlay} onKeyDown={(e) => e.key === 'Enter' && togglePlay()} style={{ background: 'var(--card-orange, #f5954a)', border: 'none', color: 'white', width: '48px', height: '48px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245, 149, 74, 0.4)' }}>
               {isPlaying ? <Pause size={22} fill="white" /> : <Play size={22} fill="white" style={{ marginLeft: '4px' }} />}
             </button>
-            <button onClick={playNextSong} style={{ background: 'none', border: 'none', color: 'var(--text-color, #fff)', cursor: 'pointer', display: 'flex' }}>
+            <button className="focusable" tabIndex={0} onClick={playNextSong} onKeyDown={(e) => e.key === 'Enter' && playNextSong()} style={{ background: 'none', border: 'none', color: 'var(--text-color, #fff)', cursor: 'pointer', display: 'flex' }}>
               <SkipForward size={22} />
             </button>
           </div>
