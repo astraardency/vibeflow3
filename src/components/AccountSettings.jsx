@@ -109,26 +109,7 @@ const AccountSettings = ({ onClose }) => {
     alert('Activating Jam access with Bluetooth...');
   };
 
-  // Handle Google redirect result on mount (mobile web flow)
-  useEffect(() => {
-    if (!isCapacitor) {
-      getRedirectResult(auth).then(async (result) => {
-        if (result && result.user) {
-          const user = result.user;
-          await setDoc(doc(db, "users", user.uid), {
-            id: user.uid,
-            username: user.displayName || user.email.split('@')[0],
-            email: user.email,
-            preferences: { highQualityAudio: true, dataSaver: false, offlineMode: true },
-            joinDate: new Date().toISOString()
-          }, { merge: true });
-          setIsLoggedIn(true);
-          setUsername(user.displayName || user.email.split('@')[0]);
-          setEmail(user.email);
-        }
-      }).catch(err => console.error('Redirect result error:', err));
-    }
-  }, [isCapacitor]);
+  // Removed getRedirectResult useEffect because we now exclusively use signInWithPopup for web logins to prevent mobile browser redirect loops.
 
   useEffect(() => {
     if (isCapacitor) {
@@ -315,12 +296,8 @@ const AccountSettings = ({ onClose }) => {
         setIsLoggedIn(true);
         setUsername(user.displayName || user.email.split('@')[0]);
         setEmail(user.email);
-      } else if (isMobileWeb) {
-        // Mobile web: use redirect (popups are blocked on mobile browsers)
-        await signInWithRedirect(auth, googleProvider);
-        // Page will redirect and come back; result handled in useEffect above
       } else {
-        // Desktop web: use popup
+        // Web: universally use popup to avoid mobile redirect loops
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
 
