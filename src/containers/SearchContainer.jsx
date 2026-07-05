@@ -235,6 +235,7 @@ const SearchContainer = () => {
                   className={`playlist-song-item focusable ${isActive ? 'active-track' : ''}`}
                   tabIndex={0}
                   onClick={() => playSong(song, idx, selectedSaavnPlaylist.songs)}
+                  onKeyDown={(e) => e.key === 'Enter' && playSong(song, idx, selectedSaavnPlaylist.songs)}
                 >
                   <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                     <img
@@ -304,6 +305,7 @@ const SearchContainer = () => {
                     className="search-playlist-card focusable"
                     tabIndex={0}
                     onClick={() => handlePlaylistCardClick(playlist.id)}
+                    onKeyDown={(e) => e.key === 'Enter' && handlePlaylistCardClick(playlist.id)}
                     style={{ flex: '0 0 130px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}
                   >
                     <div style={{ position: 'relative', width: '130px', height: '130px', borderRadius: '12px', overflow: 'hidden' }}>
@@ -342,6 +344,7 @@ const SearchContainer = () => {
                         className="search-playlist-card focusable"
                         tabIndex={0}
                         onClick={() => handlePlaylistCardClick(playlist.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && handlePlaylistCardClick(playlist.id)}
                         style={{ flex: '0 0 130px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}
                       >
                         <div style={{ position: 'relative', width: '130px', height: '130px', borderRadius: '12px', overflow: 'hidden' }}>
@@ -377,7 +380,7 @@ const SearchContainer = () => {
                         {uniqueArtists.map((artistName, idx) => {
                           const artistSong = searchResults.find(s => s.artist?.includes(artistName));
                           return (
-                            <div key={idx} onClick={() => { setSearchQuery(artistName); handleSearch({ preventDefault: () => {} }); }} className="search-playlist-card focusable" style={{ flex: '0 0 100px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                            <div key={idx} onClick={() => { setSearchQuery(artistName); handleSearch({ preventDefault: () => {} }); }} onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(artistName); handleSearch({ preventDefault: () => {} }); } }} className="search-playlist-card focusable" tabIndex={0} style={{ flex: '0 0 100px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                               <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--card-border, #333)' }}>
                                 <img src={artistSong?.img} alt={artistName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               </div>
@@ -405,7 +408,7 @@ const SearchContainer = () => {
                         {uniqueAlbums.map((albumName, idx) => {
                           const albumSong = searchResults.find(s => s.album === albumName);
                           return (
-                            <div key={idx} onClick={() => { setSearchQuery(albumName); handleSearch({ preventDefault: () => {} }); }} className="search-playlist-card focusable" style={{ flex: '0 0 130px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div key={idx} onClick={() => { setSearchQuery(albumName); handleSearch({ preventDefault: () => {} }); }} onKeyDown={(e) => { if (e.key === 'Enter') { setSearchQuery(albumName); handleSearch({ preventDefault: () => {} }); } }} className="search-playlist-card focusable" tabIndex={0} style={{ flex: '0 0 130px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               <div style={{ width: '130px', height: '130px', borderRadius: '12px', overflow: 'hidden' }}>
                                 <img src={albumSong?.img} alt={albumName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               </div>
@@ -432,6 +435,7 @@ const SearchContainer = () => {
                   className={`search-result-item focusable ${currentTrack?.id === song.id ? 'active-track' : ''}`}
                   tabIndex={0}
                   onClick={() => playSong(song, index, searchResults)}
+                  onKeyDown={(e) => e.key === 'Enter' && playSong(song, index, searchResults)}
                 >
                   <img src={song.img} alt={song.title} className="search-result-img" />
                   <div className="search-result-info">

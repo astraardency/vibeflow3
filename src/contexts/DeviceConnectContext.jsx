@@ -213,7 +213,8 @@ export const DeviceConnectProvider = ({ children }) => {
     }).catch(console.error);
   };
 
-  const isLocalDeviceActive = !currentUser || activeDeviceId === null || activeDeviceId === deviceId;
+  const isActiveDeviceOnline = availableDevices.some(d => d.id === activeDeviceId);
+  const isLocalDeviceActive = !currentUser || activeDeviceId === null || activeDeviceId === deviceId || !isActiveDeviceOnline;
 
   const value = {
     deviceId,

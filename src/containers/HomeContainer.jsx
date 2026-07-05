@@ -120,6 +120,7 @@ const HomeContainer = ({
                     className={`artist-song-row focusable ${isActive ? 'active-row' : ''}`}
                     tabIndex={0}
                     onClick={() => playSong(song, index, artistSongs)}
+                    onKeyDown={(e) => e.key === 'Enter' && playSong(song, index, artistSongs)}
                   >
                     <div className="row-index">
                       {isActive && isPlaying ? (
@@ -205,6 +206,7 @@ const HomeContainer = ({
               className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
               tabIndex={0}
               onClick={() => playSong(song, idx, defaultSongs.slice(0, 50))}
+              onKeyDown={(e) => e.key === 'Enter' && playSong(song, idx, defaultSongs.slice(0, 50))}
             >
               <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                 <img src={getSongImage(song)} alt={song.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', display: 'block' }} />
@@ -292,6 +294,12 @@ const HomeContainer = ({
                     onClick={() => {
                       setSelectedPlaylist(playlist);
                       setActiveTab('create');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setSelectedPlaylist(playlist);
+                        setActiveTab('create');
+                      }
                     }}
                     style={{ boxShadow: 'none', cursor: 'pointer' }}
                   >

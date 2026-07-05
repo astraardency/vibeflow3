@@ -213,7 +213,8 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                   key={song.id || idx}
                   className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                   tabIndex={0}
-                  onClick={() => playSong(song, idx, getLikedSongsList())}
+                  onClick={() => playSong(song, idx, getLikedSongsList(), { triggerToast })}
+                  onKeyDown={(e) => e.key === 'Enter' && playSong(song, idx, getLikedSongsList(), { triggerToast })}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                 >
                   <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -373,7 +374,8 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                   key={song.id || idx}
                   className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                   tabIndex={0}
-                  onClick={() => playSong(song, idx, selectedPlaylist.songs)}
+                  onClick={() => playSong(song, idx, selectedPlaylist.songs, { triggerToast })}
+                  onKeyDown={(e) => e.key === 'Enter' && playSong(song, idx, selectedPlaylist.songs, { triggerToast })}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                 >
                   <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -414,7 +416,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
               {(playlistSearchQuery.trim() === '' ? getSuggestedSongs() : playlistSearchResults).map((song) => {
                 const isAdded = selectedPlaylist.songs.some(s => s.id === song.id || s.title === song.title)
                 return (
-                  <div key={song.id} className="search-result-item focusable" tabIndex={0} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', background: 'var(--card-bg)' }}>
+                  <div key={song.id} className="search-result-item focusable" tabIndex={0} onClick={() => { if (!isAdded) addSongToPlaylist(selectedPlaylist.id, song) }} onKeyDown={(e) => { if (e.key === 'Enter' && !isAdded) addSongToPlaylist(selectedPlaylist.id, song) }} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', background: 'var(--card-bg)' }}>
                     <img src={song.img} alt={song.title} className="search-result-img" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
                     <div className="search-result-info" style={{ flex: 1, marginLeft: '10px', overflow: 'hidden' }}>
                       <div className="search-result-title" style={{ fontSize: '14px', color: 'var(--text-color)' }}>{song.title}</div>
@@ -465,7 +467,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
 
         <h3 className="collection-title">Your Collection</h3>
         <div className="collection-grid">
-          <div className="collection-card collection-card--liked focusable" tabIndex={0} onClick={() => setIsLikedSongsOpen(true)}>
+          <div className="collection-card collection-card--liked focusable" tabIndex={0} onClick={() => setIsLikedSongsOpen(true)} onKeyDown={(e) => e.key === 'Enter' && setIsLikedSongsOpen(true)}>
             <div className="collection-card-art liked-card-gradient">
               <Heart size={32} fill="white" color="white" />
               <div className="collection-card-art-shine"></div>
@@ -484,7 +486,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
             ];
             const grad = gradients[pIdx % gradients.length];
             return (
-              <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)}>
+              <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)} onKeyDown={(e) => e.key === 'Enter' && setSelectedPlaylist(playlist)}>
                 <div className="collection-card-art" style={{ background: playlist.img ? `url("${playlist.img}") center/cover no-repeat` : grad }}>
                   {!playlist.img && <ListMusic size={32} color="white" />}
                   <div className="collection-card-art-shine"></div>
@@ -540,7 +542,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
           <div className="stats-card">
             <Headphones size={22} className="stats-card-icon" />
             <div className="stats-card-label">Total Plays</div>
-            <div className="stats-card-val">{playsCount} songs</div>
+            <div className="stats-card-val">{playsCount} plays</div>
           </div>
 
           <div className="stats-card">

@@ -34,8 +34,8 @@ import AsyncArtistImage from './components/AsyncArtistImage';
 import DownloadContainer from './components/DownloadContainer'
 import './App.css'
 
-const NativeAudio = registerPlugin('NativeAudio');
 const WidgetPlugin = registerPlugin('WidgetPlugin');
+const NativeAudio = registerPlugin('NativeAudio');
 
 // Safe cross-device sync: adds a playlist ID to user doc without overwriting other saved IDs
 const arrayUnionUpdateUserDoc = (uid, playlistId) => {
@@ -95,6 +95,7 @@ function App() {
   const {
     currentUser,
     isUserDataLoaded,
+    userData,
     likedSongs,
     listeningActivity,
     setListeningActivity,
@@ -102,6 +103,8 @@ function App() {
     setPlaysCount,
     artistPlays,
     setArtistPlays,
+    dailyPlays,
+    setDailyPlays,
     isDarkMode,
     setIsDarkMode,
     savedPlaylistIds,
@@ -272,23 +275,67 @@ function App() {
   const handleFloatingTouchEnd = () => {
     setTimeout(() => { dragRef.current.isDragging = false; }, 50);
   }
-  // likedSongs and playsCount are synced via AuthContext
   const [showAllComposers, setShowAllComposers] = useState(false);
-  const [dailyPlays, setDailyPlays] = useState(() => {
-    try {
-      const saved = localStorage.getItem('daily_plays');
-      const parsed = saved ? JSON.parse(saved) : [0, 0, 0, 0, 0, 0, 0];
-      return Array.isArray(parsed) ? parsed : [0, 0, 0, 0, 0, 0, 0];
-    } catch (e) {
-      return [0, 0, 0, 0, 0, 0, 0];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('daily_plays', JSON.stringify(dailyPlays));
-  }, [dailyPlays]);
-
   // artistPlays and listeningActivity are synced via AuthContext
+  
+  const lastCountedTrackIdRef = useRef(null);
+
+  // Track plays when a new song starts
+  useEffect(() => {
+    if (currentTrack && isPlaying && isLocalDeviceActive) {
+      const trackIdentifier = currentTrack.id || currentTrack.title;
+      if (lastCountedTrackIdRef.current !== trackIdentifier) {
+        lastCountedTrackIdRef.current = trackIdentifier;
+        
+        setPlaysCount(prev => {
+          const newCount = prev + 1;
+          localStorage.setItem('plays_count', newCount.toString());
+          return newCount;
+        });
+        
+        setDailyPlays(prev => {
+          const newDaily = [...prev];
+          const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
+          newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
+          return newDaily;
+        });
+        
+        setArtistPlays(prev => {
+          const newCounts = { ...prev };
+          if (currentTrack.artist) {
+            const artists = currentTrack.artist.split(',').map(a => a.trim());
+            artists.forEach(a => {
+              newCounts[a] = (newCounts[a] || 0) + 1;
+            });
+          }
+          localStorage.setItem('artist_plays', JSON.stringify(newCounts));
+          return newCounts;
+        });
+        
+        setListeningActivity(prev => {
+          const filtered = prev.filter(s => s.title !== currentTrack.title);
+          const updated = [currentTrack, ...filtered].slice(0, 15);
+          localStorage.setItem('listening_activity', JSON.stringify(updated));
+          return updated;
+        });
+
+        if (currentUser && !currentUser.isAnonymous) {
+          try {
+            addDoc(collection(db, 'listening_history'), {
+              userId: currentUser.uid,
+              username: currentUser.displayName || currentUser.email || 'Unknown',
+              songId: currentTrack.id || '',
+              songTitle: currentTrack.title || '',
+              artist: currentTrack.artist || '',
+              timestamp: new Date().toISOString()
+            }).catch(e => console.warn('Could not save to listening_history:', e));
+          } catch (e) {
+            console.error("Error saving listening history:", e);
+          }
+        }
+      }
+    }
+  }, [currentTrack, isPlaying, isLocalDeviceActive, currentUser]);
 
   // Diagnostic utility for the user to cross check broken songs
   useEffect(() => {
@@ -488,7 +535,7 @@ function App() {
     }
   }, [activePlaybackQueue]);
 
-  // Init Widget State
+  // Init Widget State & MediaSession
   useEffect(() => {
     if (currentTrack && Capacitor.isNativePlatform()) {
       try {
@@ -499,6 +546,24 @@ function App() {
           imageUrl: getSongImage(currentTrack) || ''
         });
       } catch (e) { console.log('Widget init update error', e); }
+      
+      try {
+        MediaSession.setMetadata({
+          title: currentTrack.title || 'Vibeflow',
+          artist: currentTrack.artist || 'Unknown',
+          album: 'Vibeflow',
+          artwork: [{ src: getSongImage(currentTrack) || '' }]
+        });
+      } catch (e) { console.log('MediaSession error', e); }
+    }
+  }, [currentTrack]);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      MediaSession.setActionHandler({ action: 'play' }, () => callbacksRef.current?.togglePlay?.(true));
+      MediaSession.setActionHandler({ action: 'pause' }, () => callbacksRef.current?.togglePlay?.(false));
+      MediaSession.setActionHandler({ action: 'previoustrack' }, () => callbacksRef.current?.playPreviousSong?.());
+      MediaSession.setActionHandler({ action: 'nexttrack' }, () => callbacksRef.current?.playNextSong?.());
     }
   }, []);
 
@@ -629,7 +694,7 @@ function App() {
   const callbacksRef = useRef({});
   useEffect(() => {
     callbacksRef.current = {
-      playNextSong, playPreviousSong, onAudioEnded: undefined, prefetchNextTrack: undefined, onTrackChanged: (data) => {
+      playNextSong, playPreviousSong, togglePlay, onAudioEnded: undefined, prefetchNextTrack: undefined, onTrackChanged: (data) => {
         const { index } = data;
         if (activePlaybackQueue && activePlaybackQueue[index]) {
           setCurrentTrack(activePlaybackQueue[index]);
@@ -637,80 +702,9 @@ function App() {
         }
       }
     };
-  }, [playNextSong, playPreviousSong, activePlaybackQueue, setCurrentTrack, setCurrentTrackIndex]);
-
-  // Sync NativeAudio queue whenever activePlaybackQueue is updated
-  useEffect(() => {
-    if (Capacitor.isNativePlatform() && activePlaybackQueue.length > 0 && currentTrackIndex !== -1) {
-      NativeAudio.updateQueue({
-        queue: activePlaybackQueue.map(t => ({
-          id: t.id,
-          title: t.title,
-          artist: t.artist,
-          img: t.img && !t.img.startsWith('images/') ? t.img : `https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=200&auto=format&fit=crop`,
-          audioUrl: t.audioUrl || ''
-        })),
-        index: currentTrackIndex
-      }).catch(e => console.log('Native queue sync error', e));
-    }
-  }, [activePlaybackQueue, currentTrackIndex]);
-
-  // Native Audio Listeners
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    if (!isLocalDeviceActive) return;
+  }, [playNextSong, playPreviousSong, togglePlay, activePlaybackQueue, setCurrentTrack, setCurrentTrackIndex]);
 
 
-    const stateListener = NativeAudio.addListener('onStateChanged', (data) => {
-      if (data.state === 'playing') {
-        setIsPlaying(true);
-      } else if (data.state === 'paused') {
-        setIsPlaying(false);
-      }
-      if (data.duration) {
-        setDuration(data.duration);
-      }
-    });
-
-    const progressListener = NativeAudio.addListener('onProgress', (data) => {
-      if (!isDraggingSlider) {
-        setCurrentTime(data.time);
-      }
-      if (duration > 0 && duration - data.time < 15 && !prefetchingNext) {
-        setPrefetchingNext(true);
-        if (callbacksRef.current.prefetchNextTrack) {
-          callbacksRef.current.prefetchNextTrack().finally(() => setPrefetchingNext(false));
-        } else {
-          setPrefetchingNext(false);
-        }
-      }
-    });
-
-    const nextListener = NativeAudio.addListener('onNext', () => {
-      if (callbacksRef.current.playNextSong) callbacksRef.current.playNextSong();
-    });
-
-    const prevListener = NativeAudio.addListener('onPrev', () => {
-      if (callbacksRef.current.playPreviousSong) callbacksRef.current.playPreviousSong();
-    });
-
-    const endedListener = NativeAudio.addListener('onEnded', () => {
-      if (callbacksRef.current.onAudioEnded) callbacksRef.current.onAudioEnded();
-    });
-
-    const trackChangedListener = NativeAudio.addListener('onTrackChanged', (data) => {
-      if (callbacksRef.current.onTrackChanged) callbacksRef.current.onTrackChanged(data);
-    });
-
-    return () => {
-      stateListener.then(l => l.remove());
-      progressListener.then(l => l.remove());
-      nextListener.then(l => l.remove());
-      prevListener.then(l => l.remove());
-      endedListener.then(l => l.remove());
-      trackChangedListener.then(l => l.remove());
-    };
-  }, [duration, prefetchingNext, isLocalDeviceActive]); // Depend on state needed by listeners
 
   const triggerToast = (message) => {
     setToastMessage(message)
@@ -732,9 +726,7 @@ function App() {
       }
     });
 
-    if (Capacitor.isNativePlatform() && NativeAudio && NativeAudio.setVolume) {
-      NativeAudio.setVolume({ volume: val }).catch(err => console.log('Native volume error', err));
-    }
+
   };
 
   // Handle Toast timeout
@@ -2214,18 +2206,16 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Invisible HTML5 Audio Tag */}
-      {!Capacitor.isNativePlatform() && (
-        <audio
-          ref={audioRef}
-          onTimeUpdate={onTimeUpdate}
-          onLoadedMetadata={onLoadedMetadata}
-          onEnded={onAudioEnded}
-          onError={onAudioError}
-          playsInline
-          preload="auto"
-        />
-      )}
+      {/* HTML5 Audio Tag (used for both web and mobile) */}
+      <audio
+        ref={audioRef}
+        onTimeUpdate={onTimeUpdate}
+        onLoadedMetadata={onLoadedMetadata}
+        onEnded={onAudioEnded}
+        onError={onAudioError}
+        playsInline
+        preload="auto"
+      />
 
       {/* Global Toast Notification */}
       <div className={`toast ${showToast ? 'show' : ''}`}>
@@ -2370,6 +2360,7 @@ function App() {
                           className={`artist-song-row focusable ${isActive ? 'active-row' : ''}`}
                           tabIndex={0}
                           onClick={() => playSong(song, index, artistSongs)}
+                          onKeyDown={(e) => e.key === 'Enter' && playSong(song, index, artistSongs)}
                           onMouseEnter={() => prefetchSong(song)}
                           onFocus={() => prefetchSong(song)}
                         >
@@ -2459,7 +2450,7 @@ function App() {
                     key={song.id || idx}
                     className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                     tabIndex={0}
-                    onClick={() => playSong(song, idx, (window.defaultSongs || []).slice(0, 50))}
+                    onClick={() => playSong(song, idx, (window.defaultSongs || []).slice(0, 50), { triggerToast })}
                     onMouseEnter={() => prefetchSong(song)}
                     onFocus={() => prefetchSong(song)}
                   >
@@ -2743,9 +2734,8 @@ function App() {
                         key={song.id || idx}
                         className={`playlist-song-item focusable ${isActive ? 'active-track' : ''}`}
                         tabIndex={0}
-                        onClick={() => playSong(song, idx, selectedSaavnPlaylist.songs)}
-                        onMouseEnter={() => prefetchSong(song)}
-                        onFocus={() => prefetchSong(song)}
+                        onClick={() => playSong(song, idx, selectedSaavnPlaylist.songs, { triggerToast })}
+
                       >
                         <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                           <img
@@ -3044,9 +3034,8 @@ function App() {
                       key={song.id || idx}
                       className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                       tabIndex={0}
-                      onClick={() => playSong(song, idx, getLikedSongsList())}
-                      onMouseEnter={() => prefetchSong(song)}
-                      onFocus={() => prefetchSong(song)}
+                      onClick={() => playSong(song, idx, getLikedSongsList(), { triggerToast })}
+
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                     >
                       <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -3280,9 +3269,8 @@ function App() {
                       key={song.id || idx}
                       className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
                       tabIndex={0}
-                      onClick={() => playSong(song, idx, (selectedPlaylist.songs || []))}
-                      onMouseEnter={() => prefetchSong(song)}
-                      onFocus={() => prefetchSong(song)}
+                      onClick={() => playSong(song, idx, (selectedPlaylist.songs || []), { triggerToast })}
+
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
                     >
                       <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -3501,15 +3489,25 @@ function App() {
               </div>
             </div>
 
-            <div className="peak-vibe-banner">
-              <span className="lightning-icon">⚡</span>
-              <div className="peak-vibe-text">
-                <span className="peak-vibe-label">PEAK VIBE DAY</span>
-                <span className="peak-vibe-val">
-                  {playsCount > 0 ? "Today is your peak day!" : "No tracks played yet"}
-                </span>
-              </div>
-            </div>
+            {(() => {
+              const maxPlays = Math.max(...(dailyPlays || [0,0,0,0,0,0,0]));
+              const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+              const peakDayIdx = (dailyPlays || []).indexOf(maxPlays);
+              const peakDayStr = maxPlays > 0 ? days[peakDayIdx] : '';
+              const todayIdx = (new Date().getDay() + 6) % 7;
+              const isPeakToday = maxPlays > 0 && peakDayIdx === todayIdx;
+              const peakText = playsCount === 0 ? "No tracks played yet" : (isPeakToday ? "Today is your peak day!" : `Your peak day is ${peakDayStr}`);
+
+              return (
+                <div className="peak-vibe-banner">
+                  <span className="lightning-icon">⚡</span>
+                  <div className="peak-vibe-text">
+                    <span className="peak-vibe-label">PEAK VIBE DAY</span>
+                    <span className="peak-vibe-val">{peakText}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {(() => {
               const getArtistImage = (name) => {
@@ -3530,12 +3528,54 @@ function App() {
                 return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop';
               };
 
-              const sortedArtists = Object.entries(artistPlays || {})
-                .filter(([k]) => k && k.trim() !== '' && k !== 'undefined')
-                .sort(([, a], [, b]) => b - a);
+              const COMPOSER_GROUPS = {
+                'A.R. Rahman': ['a.r. rahman', 'ar rahman', 'a r rahman', 'rahman'],
+                'Anirudh Ravichander': ['anirudh'],
+                'Harris Jayaraj': ['harris'],
+                'Yuvan Shankar Raja': ['yuvan'],
+                'Ilaiyaraaja': ['ilaiyaraaja', 'ilayaraja'],
+                'Deva': ['deva'],
+                'Santhosh Narayanan': ['santhosh narayanan'],
+                'G.V. Prakash': ['g.v. prakash', 'g v prakash', 'gv prakash'],
+                'Hiphop Tamizha': ['hiphop tamizha', 'hiphop'],
+                'Vidyasagar': ['vidyasagar'],
+                'D. Imman': ['imman'],
+                'Thaman S': ['thaman'],
+                'Devi Sri Prasad': ['devi sri prasad', 'dsp'],
+                'Karthik Raja': ['karthik raja'],
+                'Bharadwaj': ['bharadwaj'],
+                'Sirpy': ['sirpy'],
+                'S.A. Rajkumar': ['s.a. rajkumar', 'sa rajkumar', 's a rajkumar'],
+                'M.S. Viswanathan': ['m.s. viswanathan', 'msv'],
+                'Sam C.S.': ['sam c.s.', 'sam cs'],
+                'Ghibran': ['ghibran'],
+                'Sean Roldan': ['sean roldan'],
+                'Vishal Chandrashekhar': ['vishal chandrashekhar'],
+                'Leon James': ['leon james'],
+                'Vivek-Mervin': ['vivek-mervin'],
+                'Justin Prabhakaran': ['justin prabhakaran'],
+                'Jakes Bejoy': ['jakes bejoy'],
+                'Gopi Sundar': ['gopi sundar'],
+                'Radhan': ['radhan'],
+                'Darbuka Siva': ['darbuka siva']
+              };
+
+              const groupedPlays = {};
+              Object.entries(artistPlays || {}).forEach(([name, count]) => {
+                if (!name || name.trim() === '' || name === 'undefined' || count <= 0) return;
+                const lower = name.toLowerCase();
+                for (const [canonical, aliases] of Object.entries(COMPOSER_GROUPS)) {
+                  if (aliases.some(alias => lower.includes(alias))) {
+                    groupedPlays[canonical] = (groupedPlays[canonical] || 0) + count;
+                    break;
+                  }
+                }
+              });
+
+              const sortedArtists = Object.entries(groupedPlays).sort(([, a], [, b]) => b - a);
               const topArtist = sortedArtists.length > 0
                 ? { name: sortedArtists[0][0], count: sortedArtists[0][1], img: getArtistImage(sortedArtists[0][0]) }
-                : { name: 'Hiphop Tamizha', count: 5, img: getArtistImage('Hiphop Tamizha') };
+                : { name: 'Hiphop Tamizha', count: 0, img: getArtistImage('Hiphop Tamizha') };
 
 
               return (
@@ -3560,15 +3600,23 @@ function App() {
 
             <div style={{ marginBottom: '32px', padding: '0 20px' }}>
               <div style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+                background: isDarkMode ? 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))' : 'var(--card-bg, #ffffff)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                border: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid var(--border-color, #eef0f3)',
                 borderRadius: '24px',
                 padding: '24px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                boxShadow: isDarkMode ? '0 8px 32px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.05)'
               }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>Weekly Overview</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-color, #000)', margin: '0 0 4px 0' }}>Weekly Overview</h3>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary, rgba(0,0,0,0.5))', marginBottom: '24px', fontWeight: '500' }}>
+                  {(() => {
+                    const playsArr = dailyPlays || [0,0,0,0,0,0,0];
+                    const totalPlays = playsArr.reduce((a, b) => a + b, 0);
+                    const activeDays = playsArr.filter(p => p > 0).length || 1;
+                    return `Avg. ${Math.round(totalPlays / activeDays)} songs / day`;
+                  })()}
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '140px' }}>
                   {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
                     const todayIdx = (new Date().getDay() + 6) % 7;
@@ -3580,17 +3628,17 @@ function App() {
 
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                        <div style={{ width: '10px', height: '100px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                        <div style={{ width: '10px', height: '100px', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'var(--bar-bg, #e5e5e7)', borderRadius: '10px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
                           <div style={{
                             width: '100%',
                             height: `${h}%`,
-                            background: isToday ? 'linear-gradient(to top, #ff7b00, #ff0055)' : (playsCount === 0 ? 'rgba(255,255,255,0.2)' : 'linear-gradient(to top, #4facfe, #00f2fe)'),
+                            background: isToday ? 'linear-gradient(to top, #ff7b00, #ff0055)' : (playsCount === 0 ? (isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)') : 'linear-gradient(to top, #4facfe, #00f2fe)'),
                             borderRadius: '10px',
                             boxShadow: isToday ? '0 0 10px rgba(255, 0, 85, 0.5)' : 'none',
                             transition: 'height 0.5s ease-out'
                           }}></div>
                         </div>
-                        <span style={{ marginTop: '12px', fontSize: '12px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? '#fff' : 'rgba(255,255,255,0.4)' }}>{day}</span>
+                        <span style={{ marginTop: '12px', fontSize: '12px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? 'var(--text-color, #000)' : 'var(--text-secondary, rgba(0,0,0,0.4))' }}>{day}</span>
                       </div>
                     );
                   })}
@@ -3600,8 +3648,8 @@ function App() {
 
             <div style={{ paddingBottom: '120px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', marginBottom: '16px' }}>
-                <h3 style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Top Composers</h3>
-                <span onClick={() => setShowAllComposers(!showAllComposers)} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', cursor: 'pointer' }}>{showAllComposers ? 'View Less' : 'View All'}</span>
+                <h3 style={{ color: 'var(--text-color, #000)', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Top Artists</h3>
+                <span onClick={() => setShowAllComposers(!showAllComposers)} style={{ color: 'var(--text-secondary, rgba(0,0,0,0.5))', fontSize: '13px', cursor: 'pointer' }}>{showAllComposers ? 'View Less' : 'View All'}</span>
               </div>
               <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: showAllComposers ? 'wrap' : 'nowrap', overflowX: showAllComposers ? 'hidden' : 'auto', padding: '0 20px', gap: '16px', scrollSnapType: showAllComposers ? 'none' : 'x mandatory' }}>
                 {(() => {
@@ -3623,7 +3671,51 @@ function App() {
                     return 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop';
                   };
 
-                  const sorted = Object.entries(artistPlays || {})
+                  const COMPOSER_GROUPS = {
+                    'A.R. Rahman': ['a.r. rahman', 'ar rahman', 'a r rahman', 'rahman'],
+                    'Anirudh Ravichander': ['anirudh'],
+                    'Harris Jayaraj': ['harris'],
+                    'Yuvan Shankar Raja': ['yuvan'],
+                    'Ilaiyaraaja': ['ilaiyaraaja', 'ilayaraja'],
+                    'Deva': ['deva'],
+                    'Santhosh Narayanan': ['santhosh narayanan'],
+                    'G.V. Prakash': ['g.v. prakash', 'g v prakash', 'gv prakash'],
+                    'Hiphop Tamizha': ['hiphop tamizha', 'hiphop'],
+                    'Vidyasagar': ['vidyasagar'],
+                    'D. Imman': ['imman'],
+                    'Thaman S': ['thaman'],
+                    'Devi Sri Prasad': ['devi sri prasad', 'dsp'],
+                    'Karthik Raja': ['karthik raja'],
+                    'Bharadwaj': ['bharadwaj'],
+                    'Sirpy': ['sirpy'],
+                    'S.A. Rajkumar': ['s.a. rajkumar', 'sa rajkumar', 's a rajkumar'],
+                    'M.S. Viswanathan': ['m.s. viswanathan', 'msv'],
+                    'Sam C.S.': ['sam c.s.', 'sam cs'],
+                    'Ghibran': ['ghibran'],
+                    'Sean Roldan': ['sean roldan'],
+                    'Vishal Chandrashekhar': ['vishal chandrashekhar'],
+                    'Leon James': ['leon james'],
+                    'Vivek-Mervin': ['vivek-mervin'],
+                    'Justin Prabhakaran': ['justin prabhakaran'],
+                    'Jakes Bejoy': ['jakes bejoy'],
+                    'Gopi Sundar': ['gopi sundar'],
+                    'Radhan': ['radhan'],
+                    'Darbuka Siva': ['darbuka siva']
+                  };
+
+                  const groupedPlays = {};
+                  Object.entries(artistPlays || {}).forEach(([name, count]) => {
+                    if (!name || name.trim() === '' || name === 'undefined' || count <= 0) return;
+                    const lower = name.toLowerCase();
+                    for (const [canonical, aliases] of Object.entries(COMPOSER_GROUPS)) {
+                      if (aliases.some(alias => lower.includes(alias))) {
+                        groupedPlays[canonical] = (groupedPlays[canonical] || 0) + count;
+                        break;
+                      }
+                    }
+                  });
+
+                  const sorted = Object.entries(groupedPlays)
                     .sort(([, a], [, b]) => b - a)
                     .slice(0, showAllComposers ? undefined : 5)
                     .map(([name, count]) => ({
@@ -3631,24 +3723,6 @@ function App() {
                       count,
                       img: getArtistImage(name)
                     }));
-
-                  const defaults = [
-                    { name: 'Deva', count: 0, img: 'https://i.pinimg.com/736x/d2/03/29/d20329dcc8e63d29a2c8ada710037aaf.jpg' },
-                    { name: 'Anirudh', count: 0, img: 'https://i.pinimg.com/736x/d1/fd/23/d1fd230fec559c5c09c7c08651a2843a.jpg' },
-                    { name: 'A.R. Rahman', count: 0, img: 'https://i.pinimg.com/1200x/9b/60/5c/9b605c223bd8a8eb82faf95b92c0df43.jpg' },
-                    { name: 'Yuvan Shankar Raja', count: 0, img: 'https://i.pinimg.com/736x/3b/65/3e/3b653e7e03078eda8712b5923d831bbc.jpg' },
-                    { name: 'Harris Jayaraj', count: 0, img: 'https://i.pinimg.com/736x/e3/bf/48/e3bf485d75d83bdb46a9efeea3e3f8ef.jpg' }
-                  ];
-
-                  if (sorted.length < 5) {
-                    const existingNames = sorted.map(s => s.name);
-                    for (const d of defaults) {
-                      if (!existingNames.includes(d.name)) {
-                        sorted.push(d);
-                      }
-                      if (sorted.length === 5) break;
-                    }
-                  }
 
                   return sorted.map((comp, i) => (
                     <div key={i} style={{

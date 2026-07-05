@@ -1100,7 +1100,7 @@ html {
 
 .peak-vibe-banner {
   background-color: var(--card-dark);
-  color: white;
+  color: var(--text-color);
   border-radius: var(--radius-md);
   padding: 14px var(--spacing-md);
   display: flex;
@@ -1906,8 +1906,13 @@ html {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--text-color) !important;
   transition: all 0.2s ease;
+}
+
+.playlist-back-btn svg {
+  stroke: var(--text-color) !important;
+  color: var(--text-color) !important;
 }
 
 .playlist-back-btn:hover {
@@ -1997,12 +2002,10 @@ html {
 }
 
 .playlist-song-item:hover {
-  transform: translateY(-2px);
   background-color: var(--hover-bg);
 }
 
 .playlist-song-item:hover {
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 

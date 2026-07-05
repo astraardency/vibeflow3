@@ -194,6 +194,11 @@ const AccountSettings = ({ onClose }) => {
     try {
       await signOut(auth);
       localStorage.removeItem('tv_uid');
+      localStorage.removeItem('listening_activity');
+      localStorage.removeItem('plays_count');
+      localStorage.removeItem('artist_plays');
+      localStorage.removeItem('savedPlaylistIds');
+      localStorage.removeItem('daily_plays');
       setIsLoggedIn(false);
       setUsername('');
       setEmail('');
@@ -296,6 +301,9 @@ const AccountSettings = ({ onClose }) => {
         setIsLoggedIn(true);
         setUsername(user.displayName || user.email.split('@')[0]);
         setEmail(user.email);
+      } else if (isMobileWeb) {
+        // Mobile web: use redirect (popups are blocked or reload the tab on mobile browsers)
+        await signInWithRedirect(auth, googleProvider);
       } else {
         // Web: universally use popup to avoid mobile redirect loops
         const result = await signInWithPopup(auth, googleProvider);

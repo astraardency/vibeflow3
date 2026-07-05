@@ -10,8 +10,9 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [isUserDataLoaded, setIsUserDataLoaded] = useState(false);
-  
+
   // User Data States
   const [likedSongs, setLikedSongs] = useState([]);
   const [listeningActivity, setListeningActivity] = useState(() => {
@@ -34,6 +35,15 @@ export const AuthProvider = ({ children }) => {
       return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {}
     } catch { return {} }
   });
+  const [dailyPlays, setDailyPlays] = useState(() => {
+    try {
+      const saved = localStorage.getItem('daily_plays');
+      const parsed = saved ? JSON.parse(saved) : [0, 0, 0, 0, 0, 0, 0];
+      return Array.isArray(parsed) ? parsed : [0, 0, 0, 0, 0, 0, 0];
+    } catch (e) {
+      return [0, 0, 0, 0, 0, 0, 0];
+    }
+  });
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark'
   });
@@ -52,6 +62,7 @@ export const AuthProvider = ({ children }) => {
     playsCount: null,
     isDarkMode: null,
     artistPlays: null,
+    dailyPlays: null,
     savedPlaylistIds: null
   });
 
@@ -68,6 +79,7 @@ export const AuthProvider = ({ children }) => {
         unsubscribeUserDoc = onSnapshot(doc(db, 'users', activeUid), (userDoc) => {
           if (userDoc.exists()) {
             const data = userDoc.data();
+            setUserData(data);
             if (JSON.stringify(data.likedSongs) !== JSON.stringify(lastRemoteState.current.likedSongs)) {
               setLikedSongs(prev => {
                 const remote = data.likedSongs || [];
@@ -85,12 +97,17 @@ export const AuthProvider = ({ children }) => {
               lastRemoteState.current.playsCount = data.playsCount;
             }
             if (data.isDarkMode !== lastRemoteState.current.isDarkMode) {
-              setIsDarkMode(data.isDarkMode);
-              lastRemoteState.current.isDarkMode = data.isDarkMode;
+              const safeDarkMode = data.isDarkMode ?? false;
+              setIsDarkMode(safeDarkMode);
+              lastRemoteState.current.isDarkMode = safeDarkMode;
             }
             if (JSON.stringify(data.artistPlays) !== JSON.stringify(lastRemoteState.current.artistPlays)) {
               setArtistPlays(data.artistPlays || {});
               lastRemoteState.current.artistPlays = data.artistPlays;
+            }
+            if (JSON.stringify(data.dailyPlays) !== JSON.stringify(lastRemoteState.current.dailyPlays)) {
+              setDailyPlays(data.dailyPlays || [0, 0, 0, 0, 0, 0, 0]);
+              lastRemoteState.current.dailyPlays = data.dailyPlays;
             }
             if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
               let fetched = data.savedPlaylistIds;
@@ -130,11 +147,14 @@ export const AuthProvider = ({ children }) => {
               }).catch(err => console.error("Error creating user doc:", err));
             });
           }
+          
+          if (!isUserDataLoaded) {
+            setIsUserDataLoaded(true);
+          }
         }, (error) => {
           console.error("Error fetching user data in real-time:", error);
         });
 
-        setIsUserDataLoaded(true);
       } else {
         if (unsubscribeUserDoc) unsubscribeUserDoc();
         setIsUserDataLoaded(false);
@@ -185,6 +205,11 @@ export const AuthProvider = ({ children }) => {
         changes.artistPlays = artistPlays;
         lastRemoteState.current.artistPlays = artistPlays;
       }
+      if (JSON.stringify(dailyPlays) !== JSON.stringify(lastRemoteState.current.dailyPlays)) {
+        changes.dailyPlays = dailyPlays;
+        lastRemoteState.current.dailyPlays = dailyPlays;
+        localStorage.setItem('daily_plays', JSON.stringify(dailyPlays));
+      }
       if (JSON.stringify(savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
         changes.savedPlaylistIds = savedPlaylistIds;
         lastRemoteState.current.savedPlaylistIds = savedPlaylistIds;
@@ -196,7 +221,7 @@ export const AuthProvider = ({ children }) => {
         const safeChanges = {};
         Object.keys(changes).forEach(key => {
           if (changes[key] !== undefined) {
-            safeChanges[key] = changes[key];
+            safeChanges[key] = JSON.parse(JSON.stringify(changes[key]));
           }
         });
 
@@ -205,7 +230,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
     }
-  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);
+  }, [likedSongs, listeningActivity, playsCount, isDarkMode, artistPlays, dailyPlays, savedPlaylistIds, currentUser, isUserDataLoaded]);
 
   // Sync theme variables
   useEffect(() => {
@@ -257,6 +282,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     isUserDataLoaded,
+    userData,
     likedSongs,
     listeningActivity,
     setListeningActivity,
@@ -264,6 +290,8 @@ export const AuthProvider = ({ children }) => {
     setPlaysCount,
     artistPlays,
     setArtistPlays,
+    dailyPlays,
+    setDailyPlays,
     isDarkMode,
     setIsDarkMode,
     savedPlaylistIds,

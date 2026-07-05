@@ -1,6 +1,6 @@
 // Primary and fallback API endpoints
 const API_ENDPOINTS = [
-  'http://localhost:5000/api',
+  'http://192.168.137.1:5000/api',
   'https://saavn.sumit.co/api',
 ];
 
@@ -80,7 +80,7 @@ export const searchSongs = async (query, limit = 40) => {
         return parsed.data;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const data = await fetchWithRetry(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
@@ -95,14 +95,14 @@ export const searchSongs = async (query, limit = 40) => {
       // Cache in-memory
       searchCache.set(cacheKey, songs);
       setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
-      
+
       // Cache in sessionStorage
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({
           data: songs,
           timestamp: Date.now()
         }));
-      } catch (e) {}
+      } catch (e) { }
 
       return songs;
     }
@@ -134,7 +134,7 @@ export const searchArtists = async (query, limit = 5) => {
         return parsed.data;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const data = await fetchWithRetry(`/search/artists?query=${encodeURIComponent(query)}&limit=${limit}`);
@@ -156,13 +156,13 @@ export const searchArtists = async (query, limit = 5) => {
 
       searchCache.set(cacheKey, artists);
       setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
-      
+
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({
           data: artists,
           timestamp: Date.now()
         }));
-      } catch (e) {}
+      } catch (e) { }
 
       return artists;
     }
@@ -187,11 +187,11 @@ export const getPlayableStreamForSong = async (song) => {
 
   // 1. Resolve Saavn ID (check song itself, then localStorage)
   let saavnId = (song.id && typeof song.id === 'string' && song.id.length > 5 && !song.id.includes('dummy') && !song.id.startsWith('song_')) ? song.id : null;
-  
+
   if (!saavnId && queryStr) {
     try {
       saavnId = localStorage.getItem(queryCacheKey);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 2. If we have Saavn ID, check details cache (in-memory or sessionStorage)
@@ -211,7 +211,7 @@ export const getPlayableStreamForSong = async (song) => {
             songCache.set(cacheKey, cachedSong);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (cachedSong && cachedSong.audioUrl) {
@@ -231,7 +231,7 @@ export const getPlayableStreamForSong = async (song) => {
         if (queryStr) {
           localStorage.setItem(queryCacheKey, saavnId);
         }
-      } catch (e) {}
+      } catch (e) { }
       return directMatch;
     }
   }
@@ -277,7 +277,7 @@ export const getPlayableStreamForSong = async (song) => {
         const rAlbum = (r.album || '').toLowerCase();
         const songTitleLower = cleanTitle.toLowerCase();
         const movieLower = movie.toLowerCase();
-        
+
         const albumMatches = movieLower && (rAlbum.includes(movieLower) || movieLower.includes(rAlbum));
         const titleMatches = rTitle === songTitleLower || rTitle.includes(songTitleLower) || songTitleLower.includes(rTitle);
         return albumMatches && titleMatches;
@@ -293,7 +293,7 @@ export const getPlayableStreamForSong = async (song) => {
         const rArtist = (r.artist || '').toLowerCase();
         const songTitleLower = cleanTitle.toLowerCase();
         const songArtistLower = primaryArtist.toLowerCase();
-        
+
         const artistMatches = !songArtistLower || rArtist.includes(songArtistLower) || songArtistLower.includes(rArtist);
         return rTitle === songTitleLower && artistMatches;
       });
@@ -308,7 +308,7 @@ export const getPlayableStreamForSong = async (song) => {
         const rArtist = (r.artist || '').toLowerCase();
         const songTitleLower = cleanTitle.toLowerCase();
         const songArtistLower = primaryArtist.toLowerCase();
-        
+
         const artistMatches = !songArtistLower || rArtist.includes(songArtistLower) || songArtistLower.includes(rArtist);
         return (rTitle.includes(songTitleLower) || songTitleLower.includes(rTitle)) && artistMatches;
       });
@@ -370,7 +370,7 @@ export const getPlayableStreamForSong = async (song) => {
   if (playableResult && playableResult.id) {
     const cacheKey = `song_${playableResult.id}`;
     songCache.set(cacheKey, playableResult);
-    
+
     try {
       // 1. Cache details in sessionStorage (25 min TTL)
       sessionStorage.setItem(cacheKey, JSON.stringify({
@@ -382,7 +382,7 @@ export const getPlayableStreamForSong = async (song) => {
       if (queryStr) {
         localStorage.setItem(queryCacheKey, playableResult.id);
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return playableResult;
@@ -409,7 +409,7 @@ export const getSongDetails = async (id) => {
         return parsed.data;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     const data = await fetchWithRetry(`/songs/${id}`);
@@ -420,14 +420,14 @@ export const getSongDetails = async (id) => {
         songCache.set(cacheKey, result);
         // Expire cache after 30 minutes in-memory
         setTimeout(() => songCache.delete(cacheKey), 30 * 60 * 1000);
-        
+
         // Cache in sessionStorage (25 mins TTL)
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify({
             data: result,
             timestamp: Date.now()
           }));
-        } catch (e) {}
+        } catch (e) { }
       }
       return result;
     }
@@ -456,10 +456,10 @@ const formatSongData = (song) => {
   let audioUrl = '';
   if (song.downloadUrl && Array.isArray(song.downloadUrl) && song.downloadUrl.length > 0) {
     const best = song.downloadUrl.find(d => d.quality === '320kbps')
-               || song.downloadUrl.find(d => d.quality === '160kbps')
-               || song.downloadUrl.find(d => d.quality === '96kbps')
-               || song.downloadUrl.find(d => d.quality === '48kbps')
-               || song.downloadUrl[song.downloadUrl.length - 1];
+      || song.downloadUrl.find(d => d.quality === '160kbps')
+      || song.downloadUrl.find(d => d.quality === '96kbps')
+      || song.downloadUrl.find(d => d.quality === '48kbps')
+      || song.downloadUrl[song.downloadUrl.length - 1];
 
     audioUrl = best ? (best.url || best.link || '') : '';
   }
@@ -480,7 +480,8 @@ const formatSongData = (song) => {
     audioUrl: audioUrl,
     duration: song.duration ? parseInt(song.duration) : 0,
     album: decodeHTMLEntities(song.album?.name || song.album || ''),
-    language: (song.language || '').toLowerCase()
+    language: (song.language || '').toLowerCase(),
+    fetchedAt: Date.now()
   };
 };
 

@@ -4,6 +4,7 @@ import { getPlayableStreamForSong } from '../services/saavn';
 import { useDeviceConnect } from './DeviceConnectContext';
 
 const NativeAudio = registerPlugin('NativeAudio');
+
 const defaultSongs = [];
 
 const PlayerContext = createContext();
@@ -47,6 +48,44 @@ export const PlayerProvider = ({ children }) => {
   const { 
     isLocalDeviceActive, sendCommand, incomingCommand, broadcastState, remotePlaybackState, syncQueue 
   } = useDeviceConnect();
+
+  const queueRef = useRef(defaultSongs);
+  useEffect(() => { queueRef.current = activePlaybackQueue; }, [activePlaybackQueue]);
+
+  const playNextRef = useRef(null);
+  const playPrevRef = useRef(null);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    const listeners = [
+      NativeAudio.addListener('onStateChanged', (data) => {
+        setIsPlaying(data.state === 'playing');
+        if (data.duration) setDuration(data.duration);
+      }),
+      NativeAudio.addListener('onProgress', (data) => {
+        setCurrentTime(data.time);
+      }),
+      NativeAudio.addListener('onTrackChanged', (data) => {
+        const queue = queueRef.current;
+        if (queue && queue[data.index]) {
+          setCurrentTrackIndex(data.index);
+          setCurrentTrack(queue[data.index]);
+          setCurrentTime(0);
+        }
+      }),
+      NativeAudio.addListener('onNext', () => {
+        if (playNextRef.current) playNextRef.current();
+      }),
+      NativeAudio.addListener('onPrev', () => {
+        if (playPrevRef.current) playPrevRef.current();
+      })
+    ];
+
+    return () => {
+      listeners.forEach(l => l.then(sub => sub.remove()));
+    };
+  }, []);
 
   // Process incoming remote commands
   useEffect(() => {
@@ -133,11 +172,8 @@ export const PlayerProvider = ({ children }) => {
       }
     }
     
-    // We just became inactive! Pause our local audio so only the new active device plays.
     if (!isLocalDeviceActive && wasLocalDeviceActiveRef.current) {
-      if (Capacitor.isNativePlatform()) {
-        NativeAudio.pause().catch(e => console.log(e));
-      } else if (audioRef.current) {
+      if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
@@ -202,12 +238,24 @@ export const PlayerProvider = ({ children }) => {
         id: s.id, title: s.title, artist: s.artist, img: s.img, duration: s.duration, audioUrl: s.audioUrl || ''
       })).slice(0, 50) : null;
       sendCommand('PLAY_SONG', { song, index, queueToUse: safeQueue });
+      if (callbacks.triggerToast) {
+        callbacks.triggerToast(`Playing "${song.title || song.name}" on Remote Device`);
+      }
       return;
     }
     try {
       setIsLoadingSong(true);
       if (!callbacks.skipBroadcast) setIsPlaying(false);
       if (callbacks.triggerToast) callbacks.triggerToast(`Loading "${song.title || song.name}"...`);
+
+      // Synchronous unlock for web autoplay
+      if (!Capacitor.isNativePlatform() && audioRef.current) {
+        if (!audioRef.current.src || audioRef.current.src === window.location.href) {
+          audioRef.current.src = 'data:audio/mp3;base64,//OwgAAAAAAAAAAAAAAAAAAAAA'; 
+        }
+        const p = audioRef.current.play();
+        if (p !== undefined) p.catch(() => {});
+      }
 
       if (queueToUse) {
         setActivePlaybackQueue(queueToUse);
@@ -225,7 +273,7 @@ export const PlayerProvider = ({ children }) => {
 
       if (downloadedVersion && downloadedVersion.nativeUrl && Capacitor.isNativePlatform()) {
         trackToPlay.audioUrl = Capacitor.convertFileSrc(downloadedVersion.nativeUrl);
-      } else if (!song.audioUrl || song.audioUrl.includes('audio_url_') || song.audioUrl.includes('placeholder_url')) {
+      } else if (!song.audioUrl || song.audioUrl.includes('audio_url_') || song.audioUrl.includes('placeholder_url') || (song.audioUrl.includes('saavncdn.com') && (!song.fetchedAt || Date.now() - song.fetchedAt > 12 * 60 * 60 * 1000))) {
         let playableResult = await getPlayableStreamForSong(song);
         if (playableResult) {
           trackToPlay = {
@@ -254,15 +302,19 @@ export const PlayerProvider = ({ children }) => {
       if (callbacks.onPlayStart) callbacks.onPlayStart(trackToPlay);
 
       if (Capacitor.isNativePlatform()) {
-        await NativeAudio.play({
+        NativeAudio.play({
           url: trackToPlay.audioUrl,
-          title: trackToPlay.title,
-          artist: trackToPlay.artist,
-          coverUrl: trackToPlay.img
+          title: trackToPlay.title || 'Vibeflow',
+          artist: trackToPlay.artist || 'Playing Music',
+          coverUrl: trackToPlay.img || ''
         });
-        if (startTime !== null) {
-           setTimeout(() => NativeAudio.seek({ time: startTime }), 200);
-        }
+        NativeAudio.updateQueue({
+          queue: (queueToUse || activePlaybackQueue).map(t => ({
+             id: t.id, title: t.title, artist: t.artist, img: t.img, audioUrl: t.audioUrl || ''
+          })),
+          index: targetIndex
+        }).catch(e => console.log('Native queue error', e));
+        if (startTime !== null) NativeAudio.seek({ time: startTime });
         setIsPlaying(true);
         setIsLoadingSong(false);
       } else {
@@ -293,6 +345,11 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    playNextRef.current = playNextSong;
+    playPrevRef.current = playPreviousSong;
+  });
+
   const playNextSong = () => {
     if (!isLocalDeviceActive) {
       sendCommand('NEXT');
@@ -317,7 +374,6 @@ export const PlayerProvider = ({ children }) => {
     if (activePlaybackQueue.length > 0) {
       if (currentTime > 3) {
         if (audioRef.current) audioRef.current.currentTime = 0;
-        if (Capacitor.isNativePlatform()) NativeAudio.seek({ time: 0 });
         setCurrentTime(0);
         return;
       }
@@ -360,6 +416,48 @@ export const PlayerProvider = ({ children }) => {
       console.warn("Failed to prefetch song:", e);
     }
   }, [preloadAudioFile]);
+
+  // Preload next 4 upcoming songs in the queue to speed up loading
+  useEffect(() => {
+    let isCancelled = false;
+    let timeoutId = null;
+
+    if (activePlaybackQueue && activePlaybackQueue.length > 0 && currentTrackIndex !== -1 && isLocalDeviceActive) {
+      const preloadNextSongs = async () => {
+        const songsToPreload = [];
+        // Determine the next 4 songs to preload
+        for (let i = 1; i <= 4; i++) {
+          const nextIndex = currentTrackIndex + i;
+          if (nextIndex < activePlaybackQueue.length) {
+            songsToPreload.push(activePlaybackQueue[nextIndex]);
+          } else {
+            // Wrap around to the start of the queue
+            songsToPreload.push(activePlaybackQueue[nextIndex % activePlaybackQueue.length]);
+          }
+        }
+        
+        // Fetch them sequentially to avoid blocking the network
+        for (const song of songsToPreload) {
+           if (isCancelled) break;
+           if (song) {
+             await prefetchSong(song);
+           }
+        }
+      };
+      
+      // Delay prefetching to ensure the current song loads first without network starvation
+      timeoutId = setTimeout(() => {
+        if (!isCancelled) {
+          preloadNextSongs();
+        }
+      }, 5000);
+    }
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentTrackIndex, activePlaybackQueue, isLocalDeviceActive, prefetchSong]);
 
   const value = {
     audioRef,
