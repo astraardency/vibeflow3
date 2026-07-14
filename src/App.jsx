@@ -4,7 +4,7 @@ import {
   Sparkles, Check, ChevronDown, ListMusic, X,
   Home, PlusSquare, BarChart2, Sun, Moon, Maximize2, Minimize2, Monitor,
   ChevronLeft, MoreVertical, MoreHorizontal, Volume1, Volume2, ChevronsLeft, ChevronsRight,
-  Shuffle, Repeat, SlidersHorizontal, Lock, Equal, MonitorSpeaker, Share2
+  Shuffle, Repeat, SlidersHorizontal, Lock, Equal, Cast, Share2
 } from 'lucide-react'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
@@ -21,12 +21,14 @@ import { searchSongs, searchPlaylists, getPlaylistDetails, getPlayableStreamForS
 import { MediaSession } from '@jofr/capacitor-media-session';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { saveSongBlob, deleteSongBlob } from './services/idb';
 import AccountSettings from './components/AccountSettings'
 import DeviceConnectModal from './components/DeviceConnectModal'
 import { useDeviceConnect } from './contexts/DeviceConnectContext'
 import { useAuth } from './contexts/AuthContext'
 import { usePlayer } from './contexts/PlayerContext'
 import { useLiveConnect } from './contexts/LiveConnectContext'
+import { useAppContext } from './contexts/AppContext'
 
 import { usePlaylists } from './contexts/PlaylistContext';
 import AsyncArtistImage from './components/AsyncArtistImage';
@@ -168,8 +170,13 @@ function App() {
 
   useEffect(() => {
     const errorHandler = (e) => {
+      const msg = e.message || e.reason?.message || JSON.stringify(e) || '';
+      if (typeof msg === 'string' && (msg.includes('Missing or insufficient permissions') || msg.includes('Quota exceeded') || msg.includes('Failed to fetch'))) {
+        console.warn('Ignored non-fatal error:', msg);
+        return;
+      }
       setHasError(true)
-      setErrorMessage(e.message || e.reason?.message || JSON.stringify(e))
+      setErrorMessage(msg)
     }
     window.addEventListener('error', errorHandler)
     window.addEventListener('unhandledrejection', errorHandler)
@@ -426,8 +433,13 @@ function App() {
             ...data
           };
         })
-        setPlaylists(playlistsData)
-        localStorage.setItem('playlists', JSON.stringify(playlistsData))
+        setPlaylists(prevPlaylists => {
+          const remoteIds = new Set(playlistsData.map(p => p.id));
+          const localOnly = prevPlaylists.filter(p => !remoteIds.has(p.id));
+          const merged = [...playlistsData, ...localOnly];
+          localStorage.setItem('playlists', JSON.stringify(merged));
+          return merged;
+        })
       }, (error) => {
         console.error("Error fetching playlists: ", error)
       })
@@ -456,7 +468,7 @@ function App() {
   const [newPlaylistImg, setNewPlaylistImg] = useState('')
   const [showEditCoverModal, setShowEditCoverModal] = useState(false)
   const [editCoverImg, setEditCoverImg] = useState('')
-  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(() => localStorage.getItem('isLoggedIn') !== 'true')
+  const { isAccountSettingsOpen, setIsAccountSettingsOpen } = useAppContext()
 
 
 
@@ -1144,6 +1156,13 @@ function App() {
         } catch (err) {
           console.error("Error deleting downloaded file", err);
         }
+      } else if (!Capacitor.isNativePlatform() && exists.nativeUrl && exists.nativeUrl.startsWith('idb://')) {
+        const idbKey = exists.nativeUrl.replace('idb://', '');
+        try {
+          await deleteSongBlob(idbKey);
+        } catch(e) {
+          console.error("Error deleting IDB blob", e);
+        }
       }
       setDownloadedSongs(prev => {
         const newDownloads = prev.filter(s => s.id !== song.id && s.title !== song.title);
@@ -1161,25 +1180,50 @@ function App() {
         }
         if (!streamUrl) throw new Error("No stream URL");
 
-        const response = await fetch(streamUrl);
-        if (!response.ok) throw new Error("Network error fetching audio");
-        const blob = await response.blob();
+        const fileName = `vibeflow_${song.id || Date.now()}.mp3`;
+        let fileUri = '';
 
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const base64data = reader.result.split(',')[1];
-          const fileName = `vibeflow_${song.id || Date.now()}.mp3`;
+        if (Capacitor.isNativePlatform()) {
+          // Native file download bypassing JS fetch memory limits
+          const result = await Filesystem.downloadFile({
+            url: streamUrl,
+            path: fileName,
+            directory: Directory.Data,
+            recursive: true
+          });
+          // Capacitor Filesystem returns path/uri
+          fileUri = result.path || result.uri || '';
 
-          let fileUri = '';
-          if (Capacitor.isNativePlatform()) {
-            const result = await Filesystem.writeFile({
-              path: fileName,
-              data: base64data,
-              directory: Directory.Data,
-              recursive: true
-            });
-            fileUri = result.uri;
+          setDownloadedSongs(prev => {
+            const newSong = { ...song, localPath: fileName, nativeUrl: fileUri, audioUrl: fileUri || streamUrl };
+            const newDownloads = [...prev, newSong];
+            localStorage.setItem('downloadedSongs', JSON.stringify(newDownloads));
+            return newDownloads;
+          });
+          triggerToast('Downloaded offline!');
+        } else {
+          // Web platform download implementation
+          const response = await fetch(streamUrl);
+          if (!response.ok) throw new Error("Network error fetching audio");
+          const blob = await response.blob();
+
+          // Trigger actual browser download
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objectUrl);
+
+          // Save for offline playback in web app
+          const idbKey = song.id || fileName;
+          try {
+            await saveSongBlob(idbKey, blob);
+            fileUri = `idb://${idbKey}`;
+          } catch(e) {
+            console.error("IDB save failed", e);
           }
 
           setDownloadedSongs(prev => {
@@ -1189,7 +1233,7 @@ function App() {
             return newDownloads;
           });
           triggerToast('Downloaded offline!');
-        };
+        }
       } catch (err) {
         console.error("Download failed:", err);
         triggerToast("Download failed. Try again.");
@@ -1561,7 +1605,7 @@ function App() {
     setPlaylists(updatedPlaylists)
     localStorage.setItem('playlists', JSON.stringify(updatedPlaylists))
 
-    const newSaved = [...savedPlaylistIds, newId];
+    const newSaved = [...(savedPlaylistIds || []), newId];
     setSavedPlaylistIds(newSaved);
     localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
 
@@ -1605,7 +1649,7 @@ function App() {
     setPlaylists(updatedPlaylists)
     localStorage.setItem('playlists', JSON.stringify(updatedPlaylists))
 
-    const updatedSaved = savedPlaylistIds.filter(pid => pid !== id);
+    const updatedSaved = (savedPlaylistIds || []).filter(pid => pid !== id);
     setSavedPlaylistIds(updatedSaved);
     localStorage.setItem('savedPlaylistIds', JSON.stringify(updatedSaved));
 
@@ -2251,7 +2295,7 @@ function App() {
             tabIndex={0}
             onClick={() => setActiveTab('create')}
           >
-            <PlusSquare size={18} />
+            <ListMusic size={18} />
             <span>Playlists</span>
           </button>
           <button
@@ -2487,7 +2531,7 @@ function App() {
                 hasActivity={listeningActivity.length > 0}
               />
 
-              {(listeningActivity.length > 0 || playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).length > 0) && (
+              {(listeningActivity.length > 0 || playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length > 0) && (
                 <div className="carousel-container" style={{ marginTop: '0' }}>
                   <h3 className="section-title">
                     Latest Playlists
@@ -2513,7 +2557,9 @@ function App() {
                       });
 
                       // Get user's saved/custom playlists
-                      const savedUserPlaylists = playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).reverse();
+                      const savedUserPlaylists = playlists
+                        .filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id))
+                        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
                       // Combine them, putting custom playlists FIRST, then recently played
                       const combinedPlaylists = [...savedUserPlaylists, ...recentlyPlayedPlaylists];
@@ -3205,15 +3251,16 @@ function App() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (savedPlaylistIds.includes(selectedPlaylist.id)) {
+                          const safeIds = savedPlaylistIds || [];
+                          if (safeIds.includes(selectedPlaylist.id)) {
                             // Remove from library
-                            const updatedSaved = savedPlaylistIds.filter(pid => pid !== selectedPlaylist.id);
+                            const updatedSaved = safeIds.filter(pid => pid !== selectedPlaylist.id);
                             setSavedPlaylistIds(updatedSaved);
                             localStorage.setItem('savedPlaylistIds', JSON.stringify(updatedSaved));
                             triggerToast('Removed from your Library');
                           } else {
                             // Add to library
-                            const newSaved = [...savedPlaylistIds, selectedPlaylist.id];
+                            const newSaved = [...safeIds, selectedPlaylist.id];
                             setSavedPlaylistIds(newSaved);
                             localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
                             triggerToast('Added to your Library');
@@ -3222,9 +3269,9 @@ function App() {
                         className="focusable"
                         tabIndex={0}
                         style={{
-                          background: savedPlaylistIds.includes(selectedPlaylist.id) ? 'rgba(255,255,255,0.1)' : 'var(--neon-cyan)',
-                          border: savedPlaylistIds.includes(selectedPlaylist.id) ? '1px solid rgba(255,255,255,0.2)' : 'none',
-                          color: savedPlaylistIds.includes(selectedPlaylist.id) ? 'var(--text-color)' : '#000',
+                          background: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'rgba(255,255,255,0.1)' : 'var(--neon-cyan)',
+                          border: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                          color: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'var(--text-color)' : '#000',
                           padding: '10px 20px',
                           borderRadius: '24px',
                           fontSize: '13px',
@@ -3233,10 +3280,10 @@ function App() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          boxShadow: savedPlaylistIds.includes(selectedPlaylist.id) ? 'none' : '0 4px 14px rgba(0, 229, 204, 0.4)'
+                          boxShadow: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'none' : '0 4px 14px rgba(0, 229, 204, 0.4)'
                         }}
                       >
-                        {savedPlaylistIds.includes(selectedPlaylist.id) ? (
+                        {(savedPlaylistIds || []).includes(selectedPlaylist.id) ? (
                           <>
                             <Check size={16} color="var(--text-color)" />
                             Saved
@@ -3391,7 +3438,7 @@ function App() {
               {/* Stats Row */}
               <div className="library-stats-row">
                 <div className="library-stat-pill">
-                  <span className="lib-stat-val">{playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).length}</span>
+                  <span className="lib-stat-val">{playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length}</span>
                   <span className="lib-stat-label">Playlists</span>
                 </div>
                 <div className="library-stat-divider"></div>
@@ -3401,7 +3448,7 @@ function App() {
                 </div>
                 <div className="library-stat-divider"></div>
                 <div className="library-stat-pill">
-                  <span className="lib-stat-val">{playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).reduce((acc, p) => acc + (p.songs?.length || 0), 0)}</span>
+                  <span className="lib-stat-val">{playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).reduce((acc, p) => acc + (p.songs?.length || 0), 0)}</span>
                   <span className="lib-stat-label">Saved Songs</span>
                 </div>
               </div>
@@ -3421,7 +3468,10 @@ function App() {
                   </div>
                 </div>
 
-                {playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).map((playlist, pIdx) => {
+                {playlists
+                  .filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id))
+                  .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                  .map((playlist, pIdx) => {
                   const gradients = [
                     'linear-gradient(135deg, #f5954a 0%, #ff6b9d 100%)',
                     'linear-gradient(135deg, #00e5cc 0%, #007cf0 100%)',
@@ -3432,7 +3482,7 @@ function App() {
                   const grad = gradients[pIdx % gradients.length];
                   return (
                     <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)}>
-                      <div className="collection-card-art" style={{ background: playlist.img ? `url("${playlist.img}") center/cover no-repeat` : grad }}>
+                      <div className="collection-card-art" style={playlist.img ? { backgroundImage: `url("${playlist.img}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : { background: grad }}>
                         {!playlist.img && <ListMusic size={32} color="white" />}
                         <div className="collection-card-art-shine"></div>
                       </div>
@@ -3452,7 +3502,7 @@ function App() {
                   );
                 })}
 
-                {playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).length === 0 && (
+                {playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length === 0 && (
                   <div className="empty-playlists-msg">
                     <ListMusic size={28} color="var(--text-secondary)" />
                     <p>No playlists yet.<br />Tap "New Playlist" to start.</p>
@@ -4169,7 +4219,7 @@ function App() {
               </div>
               <div className="mini-player-controls" onClick={(e) => e.stopPropagation()}>
                 <button className="player-control-btn focusable" tabIndex={0} onClick={() => setIsDeviceModalOpen(true)}>
-                  <MonitorSpeaker size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'currentColor'} />
+                  <Cast size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'currentColor'} />
                 </button>
                 <button className="player-control-btn focusable" tabIndex={0} onClick={togglePlay}>
                   {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
@@ -4258,7 +4308,7 @@ function App() {
               <Download size={18} color={downloadedSongs.find(s => s.id === currentTrack.id || s.title === currentTrack.title) ? 'var(--card-orange)' : 'white'} />
             </button>
             <button className="d-player-icon-btn focusable" tabIndex={0} onClick={() => setIsDeviceModalOpen(true)} title="Devices">
-              <MonitorSpeaker size={18} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'inherit'} />
+              <Cast size={18} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'inherit'} />
             </button>
             <button className="d-player-icon-btn focusable" tabIndex={0} onClick={() => setIsLiveConnectOpen(true)} title="Live Connect" style={{ color: isLiveConnected ? 'var(--card-orange)' : 'inherit' }}>
               <Radio size={18} />
@@ -4371,7 +4421,7 @@ function App() {
                   {/* Secondary Controls */}
                   <div className="fullscreen-controls-secondary">
                     <button className="fullscreen-icon-btn" onClick={() => setIsDeviceModalOpen(true)}>
-                      <MonitorSpeaker size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
+                      <Cast size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
                     </button>
                     
                     <button className="fullscreen-icon-btn" onClick={() => setIsLiveConnectOpen(true)} title="Live Connect">

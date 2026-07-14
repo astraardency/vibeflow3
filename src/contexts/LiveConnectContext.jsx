@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { useAuth } from './AuthContext';
 import { usePlayer } from './PlayerContext';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { generateSecureCode } from '../utils/cryptoUtils';
 
 const NativeAudio = registerPlugin('NativeAudio');
 
@@ -27,10 +28,7 @@ export const LiveConnectProvider = ({ children }) => {
   const isBroadcastingRef = useRef(false);
 
   const generateLiveCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+    return generateSecureCode(6);
   };
 
   const startLiveSession = async (triggerToast) => {

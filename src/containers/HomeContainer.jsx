@@ -239,7 +239,7 @@ const HomeContainer = ({
         hasActivity={listeningActivity.length > 0}
       />
 
-      {(listeningActivity.length > 0 || playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).length > 0) && (
+      {(listeningActivity.length > 0 || playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length > 0) && (
         <div className="carousel-container" style={{ marginTop: '0' }}>
           <h3 className="section-title">Latest Playlists</h3>
           <div className="carousel-scroll hide-scrollbar">
@@ -260,7 +260,7 @@ const HomeContainer = ({
                 }
               });
 
-              const savedUserPlaylists = playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).reverse();
+              const savedUserPlaylists = playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).reverse();
               const combinedPlaylists = [...savedUserPlaylists, ...recentlyPlayedPlaylists];
               
               const uniquePlaylists = [];

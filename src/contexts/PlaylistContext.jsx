@@ -11,6 +11,7 @@ const filterAndCleanSongs = (songs) => {
   if (!songs || !Array.isArray(songs)) return [];
   return songs
     .filter(song => {
+      if (!song) return false;
       const lang = (song.language || '').toLowerCase();
       const genre = (song.genre || '').toLowerCase();
       const isDevotional = genre.includes('devotional') || genre.includes('spiritual') || genre.includes('bhakti');
@@ -69,8 +70,13 @@ export const PlaylistProvider = ({ children }) => {
         return { id: docSnap.id, ...data };
       });
 
-      setPlaylists(playlistsData);
-      localStorage.setItem('playlists', JSON.stringify(playlistsData));
+      setPlaylists(prevPlaylists => {
+        const remoteIds = new Set(playlistsData.map(p => p.id));
+        const localOnly = prevPlaylists.filter(p => !remoteIds.has(p.id));
+        const merged = [...playlistsData, ...localOnly];
+        localStorage.setItem('playlists', JSON.stringify(merged));
+        return merged;
+      });
 
       // Self-heal: add owned playlists to savedPlaylistIds using arrayUnion (safe)
       const uid = auth.currentUser?.uid || localStorage.getItem('tv_uid') || null;

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { getPlayableStreamForSong } from '../services/saavn';
 import { useDeviceConnect } from './DeviceConnectContext';
+import { getSongBlob } from '../services/idb';
 
 const NativeAudio = registerPlugin('NativeAudio');
 
@@ -233,8 +234,9 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const playSong = async (song, index = -1, queueToUse = null, callbacks = {}, startTime = null) => {
+    if (!song) return;
     if (!isLocalDeviceActive) {
-      const safeQueue = queueToUse ? queueToUse.map(s => ({
+      const safeQueue = queueToUse ? queueToUse.filter(Boolean).map(s => ({
         id: s.id, title: s.title, artist: s.artist, img: s.img, duration: s.duration, audioUrl: s.audioUrl || ''
       })).slice(0, 50) : null;
       sendCommand('PLAY_SONG', { song, index, queueToUse: safeQueue });
@@ -257,15 +259,20 @@ export const PlayerProvider = ({ children }) => {
         if (p !== undefined) p.catch(() => {});
       }
 
-      if (queueToUse) {
-        setActivePlaybackQueue(queueToUse);
-      }
-
-      const list = queueToUse || activePlaybackQueue;
+      let list = queueToUse || activePlaybackQueue;
       let targetIndex = index;
       if (targetIndex === -1) {
         targetIndex = list.findIndex(s => s.id === song.id || s.title?.toLowerCase() === song.title?.toLowerCase());
       }
+      
+      if (targetIndex === -1) {
+        targetIndex = 0;
+        list = [song, ...list];
+        setActivePlaybackQueue(list);
+      } else if (queueToUse) {
+        setActivePlaybackQueue(queueToUse);
+      }
+
       setCurrentTrackIndex(targetIndex);
 
       let trackToPlay = { ...song };
@@ -273,7 +280,22 @@ export const PlayerProvider = ({ children }) => {
 
       if (downloadedVersion && downloadedVersion.nativeUrl && Capacitor.isNativePlatform()) {
         trackToPlay.audioUrl = Capacitor.convertFileSrc(downloadedVersion.nativeUrl);
-      } else if (!song.audioUrl || song.audioUrl.includes('audio_url_') || song.audioUrl.includes('placeholder_url') || (song.audioUrl.includes('saavncdn.com') && (!song.fetchedAt || Date.now() - song.fetchedAt > 12 * 60 * 60 * 1000))) {
+      } else if (downloadedVersion && downloadedVersion.nativeUrl && downloadedVersion.nativeUrl.startsWith('idb://')) {
+        const idbKey = downloadedVersion.nativeUrl.replace('idb://', '');
+        try {
+          const blob = await getSongBlob(idbKey);
+          if (blob) {
+            trackToPlay.audioUrl = URL.createObjectURL(blob);
+          } else {
+            throw new Error("Blob not found in IDB");
+          }
+        } catch(e) {
+          console.warn("Could not load offline blob, falling back to network", e);
+          trackToPlay.audioUrl = ''; // Force network fetch
+        }
+      }
+
+      if (!trackToPlay.audioUrl || trackToPlay.audioUrl.includes('audio_url_') || trackToPlay.audioUrl.includes('placeholder_url') || (trackToPlay.audioUrl.includes('saavncdn.com') && (!song.fetchedAt || Date.now() - song.fetchedAt > 12 * 60 * 60 * 1000))) {
         let playableResult = await getPlayableStreamForSong(song);
         if (playableResult) {
           trackToPlay = {
@@ -302,14 +324,14 @@ export const PlayerProvider = ({ children }) => {
       if (callbacks.onPlayStart) callbacks.onPlayStart(trackToPlay);
 
       if (Capacitor.isNativePlatform()) {
-        NativeAudio.play({
+        await NativeAudio.play({
           url: trackToPlay.audioUrl,
           title: trackToPlay.title || 'Vibeflow',
           artist: trackToPlay.artist || 'Playing Music',
           coverUrl: trackToPlay.img || ''
         });
         NativeAudio.updateQueue({
-          queue: (queueToUse || activePlaybackQueue).map(t => ({
+          queue: list.filter(Boolean).map(t => ({
              id: t.id, title: t.title, artist: t.artist, img: t.img, audioUrl: t.audioUrl || ''
           })),
           index: targetIndex

@@ -6,6 +6,7 @@ import { doc, setDoc, deleteDoc, collection, query, where, getDocs, updateDoc, o
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { generateSecureToken } from '../utils/cryptoUtils';
 import './AccountSettings.css';
 
 const AccountSettings = ({ onClose }) => {
@@ -53,7 +54,7 @@ const AccountSettings = ({ onClose }) => {
   // TV QR Login Effect
   useEffect(() => {
     if (!isLoggedIn && !isCapacitor && !tvSessionId) {
-      setTvSessionId(Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
+      setTvSessionId(generateSecureToken(20));
     }
   }, [isLoggedIn, isCapacitor, tvSessionId]);
 

@@ -51,25 +51,25 @@ export function useSpatialNavigation() {
             const dx = rect.left - currentRect.right;
             const dy = (rect.top + rect.bottom) / 2 - (currentRect.top + currentRect.bottom) / 2;
             distance = Math.sqrt(dx * dx + dy * dy * 4); // penalize diagonal movement
-            if (hOverlap > 0) distance -= 1000; // heavily prefer overlapping rows
+            if (vOverlap > 0) distance -= 1000; // heavily prefer overlapping rows
           } else if (e.key === 'ArrowLeft' && rect.right <= currentRect.left + 10) {
             isEligible = true;
             const dx = currentRect.left - rect.right;
             const dy = (rect.top + rect.bottom) / 2 - (currentRect.top + currentRect.bottom) / 2;
             distance = Math.sqrt(dx * dx + dy * dy * 4);
-            if (hOverlap > 0) distance -= 1000;
+            if (vOverlap > 0) distance -= 1000;
           } else if (e.key === 'ArrowDown' && rect.top >= currentRect.bottom - 10) {
             isEligible = true;
             const dy = rect.top - currentRect.bottom;
             const dx = (rect.left + rect.right) / 2 - (currentRect.left + currentRect.right) / 2;
             distance = Math.sqrt(dy * dy + dx * dx * 4);
-            if (vOverlap > 0) distance -= 1000;
+            if (hOverlap > 0) distance -= 1000; // heavily prefer overlapping columns
           } else if (e.key === 'ArrowUp' && rect.bottom <= currentRect.top + 10) {
             isEligible = true;
             const dy = currentRect.top - rect.bottom;
             const dx = (rect.left + rect.right) / 2 - (currentRect.left + currentRect.right) / 2;
             distance = Math.sqrt(dy * dy + dx * dx * 4);
-            if (vOverlap > 0) distance -= 1000;
+            if (hOverlap > 0) distance -= 1000;
           }
 
           if (isEligible && distance < minDistance) {

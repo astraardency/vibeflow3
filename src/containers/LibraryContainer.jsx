@@ -78,7 +78,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
     setPlaylists(updatedPlaylists)
     localStorage.setItem('playlists', JSON.stringify(updatedPlaylists))
 
-    const updatedSaved = savedPlaylistIds.filter(pid => pid !== id);
+    const updatedSaved = (savedPlaylistIds || []).filter(pid => pid !== id);
     setSavedPlaylistIds(updatedSaved);
     localStorage.setItem('savedPlaylistIds', JSON.stringify(updatedSaved));
 
@@ -450,7 +450,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
 
         <div className="library-stats-row">
           <div className="library-stat-pill">
-            <span className="lib-stat-val">{playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).length}</span>
+            <span className="lib-stat-val">{playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length}</span>
             <span className="lib-stat-label">Playlists</span>
           </div>
           <div className="library-stat-divider"></div>
@@ -460,7 +460,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
           </div>
           <div className="library-stat-divider"></div>
           <div className="library-stat-pill">
-            <span className="lib-stat-val">{playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).reduce((acc, p) => acc + (p.songs?.length || 0), 0)}</span>
+            <span className="lib-stat-val">{playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).reduce((acc, p) => acc + (p.songs?.length || 0), 0)}</span>
             <span className="lib-stat-label">Saved Songs</span>
           </div>
         </div>
@@ -478,7 +478,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
             </div>
           </div>
 
-          {playlists.filter(p => !p.hidden && savedPlaylistIds.includes(p.id)).map((playlist, pIdx) => {
+          {playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).map((playlist, pIdx) => {
             const gradients = [
               'linear-gradient(135deg, #f5954a 0%, #ff6b9d 100%)',
               'linear-gradient(135deg, #00e5cc 0%, #007cf0 100%)',
@@ -487,7 +487,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
             const grad = gradients[pIdx % gradients.length];
             return (
               <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)} onKeyDown={(e) => e.key === 'Enter' && setSelectedPlaylist(playlist)}>
-                <div className="collection-card-art" style={{ background: playlist.img ? `url("${playlist.img}") center/cover no-repeat` : grad }}>
+                <div className="collection-card-art" style={playlist.img ? { backgroundImage: `url("${playlist.img}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : { background: grad }}>
                   {!playlist.img && <ListMusic size={32} color="white" />}
                   <div className="collection-card-art-shine"></div>
                 </div>

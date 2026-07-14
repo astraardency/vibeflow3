@@ -44,10 +44,6 @@
     --font-base: 15px;
     --icon-size: 22px;
   }
-
-  .desktop-sidebar {
-    width: 250px;
-  }
 }
 
 /* Focus style for TV remote navigation */
@@ -1039,6 +1035,47 @@ html {
   font-weight: 500;
 }
 
+/* Shimmer overlay on playlist art card */
+.collection-card-art-shine {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.collection-card:hover .collection-card-art-shine {
+  animation: card-shine 0.6s ease forwards;
+}
+
+@keyframes card-shine {
+  0% { left: -60%; }
+  100% { left: 120%; }
+}
+
+/* Empty playlists placeholder */
+.empty-playlists-msg {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-playlists-msg p {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 0;
+}
 
 /* 5. VIBE STATS SCREEN */
 .vibe-stats-screen {
@@ -1464,14 +1501,21 @@ html {
   .desktop-sidebar {
     display: flex;
     flex-direction: column;
-    width: 260px;
-    min-width: 260px;
+    width: 80px;
+    min-width: 80px;
     background-color: var(--panel-bg);
     border-right: 1px solid var(--border-color);
     height: 100vh;
     padding: var(--spacing-lg) var(--spacing-md);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.01);
     z-index: 10;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+  }
+
+  .desktop-sidebar:hover {
+    width: 260px;
+    min-width: 260px;
   }
 
   .desktop-logo-container {
@@ -1487,6 +1531,16 @@ html {
     font-weight: 800;
     color: var(--text-color);
     letter-spacing: -0.5px;
+    white-space: nowrap;
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, max-width 0.3s ease;
+  }
+
+  .desktop-sidebar:hover .desktop-logo-text {
+    opacity: 1;
+    max-width: 200px;
   }
 
   .sidebar-menu {
@@ -1510,6 +1564,25 @@ html {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     text-align: left;
     width: 100%;
+    white-space: nowrap;
+  }
+
+  .sidebar-menu-btn svg {
+    flex-shrink: 0;
+  }
+
+  .sidebar-menu-btn span {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, max-width 0.3s ease;
+    display: inline-block;
+  }
+
+  .desktop-sidebar:hover .sidebar-menu-btn span {
+    opacity: 1;
+    max-width: 200px;
+    transition: opacity 0.3s ease 0.1s, max-width 0.3s ease; /* Slight delay so it appears smoothly */
   }
 
   .sidebar-menu-btn:hover {
@@ -2502,8 +2575,14 @@ html {
     min-width: 56px;
   }
 
-  /* Sidebar wider for TV */
+  /* Sidebar wider for TV (collapsed by default) */
   .desktop-sidebar {
+    width: 100px !important;
+    min-width: 100px !important;
+    padding: 40px 16px !important;
+  }
+
+  .desktop-sidebar:hover {
     width: 320px !important;
     min-width: 320px !important;
     padding: 40px 24px !important;

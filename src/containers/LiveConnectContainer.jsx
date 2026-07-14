@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { X, Copy, Check, Radio } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
+import { generateSecureCode } from '../utils/cryptoUtils';
 
 const LiveConnectContainer = ({ isLiveConnectOpen, setIsLiveConnectOpen, isLiveConnected, setIsLiveConnected }) => {
   const { triggerToast } = useAppContext();
   const [connectCode, setConnectCode] = useState('');
   const [myLiveCode, setMyLiveCode] = useState(() => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    return generateSecureCode(6);
   });
   const [isCopied, setIsCopied] = useState(false);
 

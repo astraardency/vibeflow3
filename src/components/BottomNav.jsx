@@ -1,6 +1,6 @@
 import React from 'react';
 import './BottomNav.css';
-import { Home, Search, PlusSquare, BarChart2 } from 'lucide-react';
+import { Home, Search, ListMusic, BarChart2 } from 'lucide-react';
 
 const BottomNav = ({ activeTab, setActiveTab }) => {
   const handleTabClick = (tabName) => {
@@ -29,8 +29,8 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
         className={`nav-item ${activeTab === 'create' ? 'active' : ''}`} 
         onClick={() => handleTabClick('create')}
       >
-        <PlusSquare size={22} strokeWidth={2.5} />
-        {activeTab === 'create' && <span className="nav-text">Create</span>}
+        <ListMusic size={22} strokeWidth={2.5} />
+        {activeTab === 'create' && <span className="nav-text">Playlists</span>}
       </div>
       
       <div 

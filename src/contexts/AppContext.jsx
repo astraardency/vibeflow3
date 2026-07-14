@@ -9,6 +9,7 @@ export const AppProvider = ({ children }) => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(() => localStorage.getItem('isLoggedIn') !== 'true');
 
   useEffect(() => {
     const handleOffline = () => setIsOffline(true);
@@ -38,7 +39,8 @@ export const AppProvider = ({ children }) => {
   const value = {
     activeTab, setActiveTab,
     toastMessage, showToast, triggerToast,
-    isOffline
+    isOffline,
+    isAccountSettingsOpen, setIsAccountSettingsOpen
   };
 
   return (

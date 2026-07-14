@@ -89,11 +89,16 @@ export const AuthProvider = ({ children }) => {
               lastRemoteState.current.likedSongs = data.likedSongs || [];
             }
             if (JSON.stringify(data.listeningActivity) !== JSON.stringify(lastRemoteState.current.listeningActivity)) {
-              setListeningActivity(data.listeningActivity || []);
+              setListeningActivity(prev => {
+                const remote = data.listeningActivity || [];
+                const merged = [...(prev || []), ...remote];
+                const unique = Array.from(new Map(merged.map(item => [item.id || item.title, item])).values());
+                return unique.slice(0, 15);
+              });
               lastRemoteState.current.listeningActivity = data.listeningActivity;
             }
             if (data.playsCount !== lastRemoteState.current.playsCount) {
-              setPlaysCount(data.playsCount || 0);
+              setPlaysCount(prev => Math.max(prev || 0, data.playsCount || 0));
               lastRemoteState.current.playsCount = data.playsCount;
             }
             if (data.isDarkMode !== lastRemoteState.current.isDarkMode) {
@@ -102,16 +107,26 @@ export const AuthProvider = ({ children }) => {
               lastRemoteState.current.isDarkMode = safeDarkMode;
             }
             if (JSON.stringify(data.artistPlays) !== JSON.stringify(lastRemoteState.current.artistPlays)) {
-              setArtistPlays(data.artistPlays || {});
+              setArtistPlays(prev => {
+                const remote = data.artistPlays || {};
+                const merged = { ...remote };
+                Object.keys(prev || {}).forEach(k => {
+                  merged[k] = Math.max(merged[k] || 0, prev[k]);
+                });
+                return merged;
+              });
               lastRemoteState.current.artistPlays = data.artistPlays;
             }
             if (JSON.stringify(data.dailyPlays) !== JSON.stringify(lastRemoteState.current.dailyPlays)) {
-              setDailyPlays(data.dailyPlays || [0, 0, 0, 0, 0, 0, 0]);
+              setDailyPlays(prev => {
+                const remote = data.dailyPlays || [0, 0, 0, 0, 0, 0, 0];
+                return remote.map((r, i) => Math.max(r, (prev && prev[i]) || 0));
+              });
               lastRemoteState.current.dailyPlays = data.dailyPlays;
             }
             if (JSON.stringify(data.savedPlaylistIds) !== JSON.stringify(lastRemoteState.current.savedPlaylistIds)) {
-              let fetched = data.savedPlaylistIds;
-              if (!fetched || fetched.length === 0) {
+              let fetched = Array.isArray(data.savedPlaylistIds) ? data.savedPlaylistIds : [];
+              if (fetched.length === 0) {
                 const creatorName = user.displayName || (user.email ? user.email.split('@')[0] : null) || localStorage.getItem('username');
                 if (creatorName) {
                   getDocs(collection(db, 'playlists')).then(snap => {
@@ -120,7 +135,7 @@ export const AuthProvider = ({ children }) => {
                       if (d.data().creator === creatorName) owned.push(d.id);
                     });
                     if (owned.length > 0) {
-                      setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...owned])));
+                      setSavedPlaylistIds(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...owned])));
                       lastRemoteState.current.savedPlaylistIds = owned;
                     } else {
                       lastRemoteState.current.savedPlaylistIds = [];
@@ -130,7 +145,7 @@ export const AuthProvider = ({ children }) => {
                   lastRemoteState.current.savedPlaylistIds = [];
                 }
               } else {
-                setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...fetched])));
+                setSavedPlaylistIds(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...fetched])));
                 lastRemoteState.current.savedPlaylistIds = fetched;
               }
             }
@@ -173,7 +188,7 @@ export const AuthProvider = ({ children }) => {
     const handlePlaylistIdsUpdated = (e) => {
       const newIds = e.detail;
       if (Array.isArray(newIds) && newIds.length > 0) {
-        setSavedPlaylistIds(prev => Array.from(new Set([...prev, ...newIds])));
+        setSavedPlaylistIds(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...newIds])));
       }
     };
     window.addEventListener('playlistIdsUpdated', handlePlaylistIdsUpdated);

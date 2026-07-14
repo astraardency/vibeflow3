@@ -1,10 +1,8 @@
-// Primary and fallback API endpoints
 const API_ENDPOINTS = [
-  'http://192.168.137.1:5000/api',
+  import.meta.env.VITE_SAAVN_LOCAL_API || 'http://192.168.137.1:5000/api',
   'https://saavn.sumit.co/api',
 ];
 
-// Session-level cache to avoid duplicate API calls during same session
 const songCache = new Map();
 const searchCache = new Map();
 
@@ -41,6 +39,7 @@ const fetchWithRetry = async (path, maxRetries = 1) => {
  */
 const decodeHTMLEntities = (text) => {
   if (!text) return '';
+  if (typeof text !== 'string') text = String(text);
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(text, 'text/html');
@@ -65,7 +64,7 @@ const decodeHTMLEntities = (text) => {
  * @returns {Promise<Array>} List of formatted songs
  */
 export const searchSongs = async (query, limit = 40) => {
-  const cacheKey = `search_${query}_${limit}`;
+  const cacheKey = `search_v2_${query}_${limit}`;
   if (searchCache.has(cacheKey)) {
     return searchCache.get(cacheKey);
   }
@@ -86,12 +85,17 @@ export const searchSongs = async (query, limit = 40) => {
     const data = await fetchWithRetry(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
 
     if (data && data.data && data.data.results) {
-      let songs = data.data.results.map(formatSongData);
-      // Filter out non-Tamil songs
-      songs = songs.filter(song => {
-        const lang = song.language || '';
-        return lang === 'tamil' || lang === 'unknown' || lang === '';
+      let songs = data.data.results.map(formatSongData).filter(Boolean);
+
+      const targetLangs = ['english', 'korean', 'japanese'];
+      songs.sort((a, b) => {
+        const aLang = a.language?.toLowerCase() || '';
+        const bLang = b.language?.toLowerCase() || '';
+        const aPrio = targetLangs.includes(aLang) ? 1 : 0;
+        const bPrio = targetLangs.includes(bLang) ? 1 : 0;
+        return bPrio - aPrio;
       });
+
       // Cache in-memory
       searchCache.set(cacheKey, songs);
       setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
@@ -120,7 +124,7 @@ export const searchSongs = async (query, limit = 40) => {
  * @returns {Promise<Array>} List of formatted artists
  */
 export const searchArtists = async (query, limit = 5) => {
-  const cacheKey = `search_artist_${query}_${limit}`;
+  const cacheKey = `search_artist_v2_${query}_${limit}`;
   if (searchCache.has(cacheKey)) {
     return searchCache.get(cacheKey);
   }
@@ -129,7 +133,7 @@ export const searchArtists = async (query, limit = 5) => {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < 15 * 60 * 1000) { // 15 mins cache
+      if (Date.now() - parsed.timestamp < 55 * 60 * 1000) {
         searchCache.set(cacheKey, parsed.data);
         return parsed.data;
       }
@@ -179,6 +183,7 @@ export const searchArtists = async (query, limit = 5) => {
  * @returns {Promise<Object|null>} The best matching saavn song
  */
 export const getPlayableStreamForSong = async (song) => {
+  if (!song) return null;
   const cleanTitle = (song.title || '').replace(/\s*\(from [^)]+\)\s*/ig, '').replace(/\s*- From .*/ig, '').trim();
   const primaryArtist = (song.artist || '').split(',')[0].trim();
   const movie = song.movie || song.album || '';
@@ -240,7 +245,7 @@ export const getPlayableStreamForSong = async (song) => {
   const findBestMatch = (searchResultList) => {
     let match = null;
 
-    const isFromLocalPlaylist = song.id && song.id.startsWith('song_');
+    const isFromLocalPlaylist = song.id && typeof song.id === 'string' && song.id.startsWith('song_');
 
     // Helper to check invalid tracks
     const isInvalidTrack = (r) => {
@@ -442,9 +447,16 @@ export const getSongDetails = async (id) => {
  * Helper to normalize song data across different API responses
  */
 const formatSongData = (song) => {
+  if (!song) return null;
   let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
   if (song.image && Array.isArray(song.image) && song.image.length > 0) {
-    imgUrl = song.image[song.image.length - 1].url || song.image[song.image.length - 1].link || imgUrl;
+    const isStringArray = typeof song.image[0] === 'string';
+    if (isStringArray) {
+      imgUrl = song.image[song.image.length - 1];
+    } else {
+      const lastImg = song.image[song.image.length - 1];
+      imgUrl = lastImg?.url || lastImg?.link || imgUrl;
+    }
   } else if (typeof song.image === 'string') {
     imgUrl = song.image;
   }
@@ -454,22 +466,39 @@ const formatSongData = (song) => {
 
   // Extract best quality download URL (prefer 320kbps, fall back to 160kbps, then others)
   let audioUrl = '';
-  if (song.downloadUrl && Array.isArray(song.downloadUrl) && song.downloadUrl.length > 0) {
-    const best = song.downloadUrl.find(d => d.quality === '320kbps')
-      || song.downloadUrl.find(d => d.quality === '160kbps')
-      || song.downloadUrl.find(d => d.quality === '96kbps')
-      || song.downloadUrl.find(d => d.quality === '48kbps')
-      || song.downloadUrl[song.downloadUrl.length - 1];
-
-    audioUrl = best ? (best.url || best.link || '') : '';
+  if (song.downloadUrl) {
+    if (Array.isArray(song.downloadUrl) && song.downloadUrl.length > 0) {
+      const isStringArray = typeof song.downloadUrl[0] === 'string';
+      if (isStringArray) {
+        audioUrl = song.downloadUrl[song.downloadUrl.length - 1];
+      } else {
+        const best = song.downloadUrl.find(d => d?.quality === '320kbps')
+          || song.downloadUrl.find(d => d?.quality === '160kbps')
+          || song.downloadUrl.find(d => d?.quality === '96kbps')
+          || song.downloadUrl.find(d => d?.quality === '48kbps')
+          || song.downloadUrl[song.downloadUrl.length - 1];
+        audioUrl = best ? (best.url || best.link || '') : '';
+      }
+    } else if (typeof song.downloadUrl === 'string') {
+      audioUrl = song.downloadUrl;
+    }
   }
 
   // Extract artists
   let artistName = 'Unknown Artist';
   if (song.artists && song.artists.primary && Array.isArray(song.artists.primary) && song.artists.primary.length > 0) {
-    artistName = song.artists.primary.map(a => decodeHTMLEntities(a.name)).join(', ');
+    artistName = song.artists.primary.map(a => typeof a === 'string' ? decodeHTMLEntities(a) : decodeHTMLEntities(a?.name || a || '')).filter(Boolean).join(', ');
   } else if (song.primaryArtists) {
-    artistName = typeof song.primaryArtists === 'string' ? decodeHTMLEntities(song.primaryArtists) : song.primaryArtists.map(a => decodeHTMLEntities(a.name)).join(', ');
+    if (typeof song.primaryArtists === 'string') {
+      artistName = decodeHTMLEntities(song.primaryArtists);
+    } else if (Array.isArray(song.primaryArtists)) {
+      artistName = song.primaryArtists.map(a => typeof a === 'string' ? decodeHTMLEntities(a) : decodeHTMLEntities(a?.name || a || '')).filter(Boolean).join(', ');
+    } else if (typeof song.primaryArtists === 'object') {
+      artistName = decodeHTMLEntities(song.primaryArtists.name || song.primaryArtists.title || '');
+    }
+  }
+  if (!artistName) {
+    artistName = 'Unknown Artist';
   }
 
   return {
@@ -536,12 +565,7 @@ export const getPlaylistDetails = async (id) => {
       } else if (typeof playlist.image === 'string') {
         imgUrl = playlist.image;
       }
-      let songs = playlist.songs ? playlist.songs.map(formatSongData) : [];
-      // Filter out non-Tamil songs from playlists
-      songs = songs.filter(song => {
-        const lang = song.language || '';
-        return lang === 'tamil' || lang === 'unknown' || lang === '';
-      });
+      let songs = playlist.songs ? playlist.songs.map(formatSongData).filter(Boolean) : [];
 
       return {
         id: playlist.id,

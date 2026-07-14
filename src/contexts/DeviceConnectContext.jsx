@@ -3,6 +3,7 @@ import { doc, setDoc, updateDoc, onSnapshot, collection, getDocs, deleteDoc, ser
 import { db } from '../services/firebase';
 import { useAuth } from './AuthContext';
 import { Capacitor } from '@capacitor/core';
+import { generateSecureToken } from '../utils/cryptoUtils';
 
 const DeviceConnectContext = createContext();
 
@@ -13,7 +14,7 @@ export const DeviceConnectProvider = ({ children }) => {
   
   const [deviceId] = useState(() => {
     let id = localStorage.getItem('device_id');
-    if (!id) { id = Math.random().toString(36).substring(2); localStorage.setItem('device_id', id); }
+    if (!id) { id = generateSecureToken(16); localStorage.setItem('device_id', id); }
     return id;
   });
 
