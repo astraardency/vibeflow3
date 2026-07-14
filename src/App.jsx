@@ -948,10 +948,13 @@ function App() {
           const mappedPlaylists = playlists.filter(p => !p.hidden).map(p => ({
             ...p,
             title: p.name,
-            songCount: p.songs?.length || 0
+            songCount: p.songs?.length || 0,
+            isCommunity: true
           }));
           const uniquePlaylists = Array.from(new Map(mappedPlaylists.map(item => [item.title, item])).values());
-          setSearchPlaylistsResults(uniquePlaylists);
+          
+          const saavnTrendingPlaylists = await searchPlaylists('Tamil', 10).catch(() => []);
+          setSearchPlaylistsResults([...uniquePlaylists, ...saavnTrendingPlaylists]);
 
           const songs = await searchSongs('latest Tamil songs', 100)
           setSearchResults(songs)
@@ -983,11 +986,14 @@ function App() {
           const communityPlaylists = [...matchedPlaylists, ...unmatchedPlaylists].map(p => ({
             ...p,
             title: p.name,
-            songCount: p.songs?.length || 0
+            songCount: p.songs?.length || 0,
+            isCommunity: true
           }))
 
           const uniqueCommunityPlaylists = Array.from(new Map(communityPlaylists.map(item => [item.title, item])).values());
-          setSearchPlaylistsResults(uniqueCommunityPlaylists)
+          
+          const saavnPlaylists = await searchPlaylists(searchQuery, 10).catch(() => []);
+          setSearchPlaylistsResults([...uniqueCommunityPlaylists, ...saavnPlaylists])
 
           // Network Search
           const songs = await searchSongs(searchQuery, 100)
