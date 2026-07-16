@@ -108,6 +108,21 @@ export const PlayerProvider = ({ children }) => {
         case 'PLAY_SONG':
           playSong(payload.song, payload.index, payload.queueToUse);
           break;
+        case 'transfer_playback':
+          if (payload.track) {
+            playSong(
+              payload.track,
+              -1,
+              null,
+              { skipBroadcast: true },
+              payload.time
+            ).then(() => {
+              if (!payload.wasPlaying) {
+                 togglePlay(false);
+              }
+            });
+          }
+          break;
       }
     }
   }, [incomingCommand, isLocalDeviceActive]);
@@ -153,35 +168,20 @@ export const PlayerProvider = ({ children }) => {
     }
   }, [isLocalDeviceActive, remotePlaybackState.currentTime, remotePlaybackState.currentTrack, remotePlaybackState.queue, remotePlaybackState.queueIndex]);
 
-  // Take over playback when we become the active device
+  // Stop playback when we are no longer the active device
   const wasLocalDeviceActiveRef = useRef(isLocalDeviceActive);
   useEffect(() => {
-    if (isLocalDeviceActive && !wasLocalDeviceActiveRef.current) {
-      // We just became active! Load the remote state by calling playSong.
-      if (remotePlaybackState.currentTrack) {
-        playSong(
-          remotePlaybackState.currentTrack, 
-          -1, 
-          null, 
-          { skipBroadcast: true }, 
-          remotePlaybackState.currentTime
-        ).then(() => {
-          if (!remotePlaybackState.isPlaying) {
-             togglePlay(false); // Pause if it was paused on the remote
-          }
-        });
-      }
-    }
-    
     if (!isLocalDeviceActive && wasLocalDeviceActiveRef.current) {
-      if (audioRef.current) {
+      if (Capacitor.isNativePlatform()) {
+        NativeAudio.pause();
+      } else if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
     }
     
     wasLocalDeviceActiveRef.current = isLocalDeviceActive;
-  }, [isLocalDeviceActive, remotePlaybackState]);
+  }, [isLocalDeviceActive]);
 
   useEffect(() => {
     if (currentTrack) {
@@ -343,18 +343,24 @@ export const PlayerProvider = ({ children }) => {
         if (audioRef.current) {
           audioRef.current.src = trackToPlay.audioUrl;
           audioRef.current.load();
+          
+          if (startTime !== null) {
+            audioRef.current.currentTime = startTime;
+          }
+
           const playPromise = audioRef.current.play();
           if (playPromise !== undefined) {
-            playPromise.then(() => {
-              if (startTime !== null) {
-                audioRef.current.currentTime = startTime;
-              }
+            try {
+              await playPromise;
               setIsPlaying(true);
+            } catch (error) {
+              if (error.name !== 'AbortError') console.error('Play failed:', error);
+              setIsPlaying(false);
+            } finally {
               setIsLoadingSong(false);
-            }).catch(error => {
-              if (error.name !== 'AbortError') setIsLoadingSong(false);
-            });
+            }
           } else {
+            setIsPlaying(true);
             setIsLoadingSong(false);
           }
         } else {

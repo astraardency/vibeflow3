@@ -10,7 +10,8 @@ const DeviceConnectModal = () => {
     availableDevices, 
     activeDeviceId, 
     transferPlayback,
-    deviceId
+    deviceId,
+    isLocalDeviceActive
   } = useDeviceConnect();
 
   if (!isDeviceModalOpen) return null;
@@ -38,8 +39,8 @@ const DeviceConnectModal = () => {
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {availableDevices.map(device => {
-            const isActive = device.id === activeDeviceId;
             const isLocal = device.id === deviceId;
+            const isActive = (device.id === activeDeviceId && !isLocalDeviceActive) || (isLocal && isLocalDeviceActive);
             const Icon = device.deviceType === 'mobile' ? Smartphone : (device.deviceType === 'tv' ? Monitor : Laptop);
             
             return (

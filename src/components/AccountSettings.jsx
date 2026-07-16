@@ -214,25 +214,17 @@ const AccountSettings = ({ onClose }) => {
       // Request permissions
       const { camera } = await BarcodeScanner.requestPermissions();
       if (camera === 'granted' || camera === 'limited') {
-        setIsScanning(true);
-        // Make background transparent for native camera view
-        document.body.classList.add('scanner-active');
-
-        // Start scanning
-        const listener = await BarcodeScanner.addListener('barcodeScanned', async (result) => {
-          if (result.barcode) {
-            handleScanResult(result.barcode.displayValue);
-          }
-        });
-
-        await BarcodeScanner.startScan();
+        // Use the native UI overlay instead of rendering behind webview
+        const { barcodes } = await BarcodeScanner.scan();
+        if (barcodes.length > 0) {
+          handleScanResult(barcodes[0].rawValue || barcodes[0].displayValue);
+        }
       } else {
         alert("Camera permission is required to scan QR codes.");
       }
     } catch (error) {
       console.error("Scanner error:", error);
       alert("Failed to start scanner: " + error.message);
-      stopScan();
     }
   };
 
@@ -240,8 +232,7 @@ const AccountSettings = ({ onClose }) => {
     try {
       document.body.classList.remove('scanner-active');
       setIsScanning(false);
-      await BarcodeScanner.removeAllListeners();
-      await BarcodeScanner.stopScan();
+      // Native scan() cleans up itself, but we keep this to reset any leftover state
     } catch (e) {
       console.error(e);
     }
@@ -284,7 +275,9 @@ const AccountSettings = ({ onClose }) => {
   };
 
   const handleGoogleAuth = async () => {
+    if (isLoading) return;
     try {
+      setIsLoading(true);
       if (isCapacitor) {
         const googleUser = await GoogleAuth.signIn();
         const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
@@ -325,6 +318,8 @@ const AccountSettings = ({ onClose }) => {
     } catch (error) {
       console.error("Error signing in with Google:", error);
       alert("Failed to sign in with Google: " + (error.message || "Please try again."));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -371,7 +366,8 @@ const AccountSettings = ({ onClose }) => {
             onClick={handleGoogleAuth}
             type="button"
             tabIndex="0"
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleGoogleAuth()}
+            disabled={isLoading}
+            onKeyDown={(e) => !isLoading && (e.key === 'Enter' || e.key === ' ') && handleGoogleAuth()}
           >
             <div className="btn-glow"></div>
             <span className="btn-icon">
@@ -856,6 +852,7 @@ const AccountSettings = ({ onClose }) => {
       case 'terms_of_use': return 'Terms of Use';
       case 'support_feedback': return 'Support & Feedback';
       case 'devices': return 'Connect to TV';
+      case 'host_dashboard': return 'Host Dashboard';
       default: return 'Settings';
     }
   };

@@ -171,7 +171,7 @@ function App() {
   useEffect(() => {
     const errorHandler = (e) => {
       const msg = e.message || e.reason?.message || JSON.stringify(e) || '';
-      if (typeof msg === 'string' && (msg.includes('Missing or insufficient permissions') || msg.includes('Quota exceeded') || msg.includes('Failed to fetch'))) {
+      if (typeof msg === 'string' && (msg.toLowerCase().includes('missing or insufficient permissions') || msg.toLowerCase().includes('quota exceeded') || msg.toLowerCase().includes('failed to fetch'))) {
         console.warn('Ignored non-fatal error:', msg);
         return;
       }

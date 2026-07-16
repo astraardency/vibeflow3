@@ -119,6 +119,8 @@ export const DeviceConnectProvider = ({ children }) => {
         }
       });
       setAvailableDevices(devices);
+    }, (error) => {
+      console.warn("DeviceConnect devices listener error:", error);
     });
     return () => unsub();
   }, [currentUser]);
@@ -150,9 +152,11 @@ export const DeviceConnectProvider = ({ children }) => {
         }
       } else {
         // Init if missing
-        setDoc(stateRef, { activeDeviceId: deviceId, isPlaying: false }, { merge: true });
+        setDoc(stateRef, { activeDeviceId: deviceId, isPlaying: false }, { merge: true }).catch(console.error);
         setActiveDeviceId(deviceId);
       }
+    }, (error) => {
+      console.warn("DeviceConnect state listener error:", error);
     });
     return () => unsub();
   }, [currentUser, deviceId]);
