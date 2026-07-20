@@ -13,27 +13,29 @@
   display: flex;
   align-items: center;
   padding: var(--spacing-sm);
-  background-color: var(--bg-color);
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: var(--neu-shadow-sm);
-  border: none;
+  box-shadow: var(--subtle-shadow);
+  border: var(--glass-border);
 }
 
 .song-row-item:hover {
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--glass-shadow);
   transform: translateY(-1px);
 }
 
 .song-row-item:active {
-  box-shadow: var(--neu-shadow-in);
+  box-shadow: none;
   transform: translateY(1px);
 }
 
 .song-row-item.active-row {
-  background-color: #ffebe0;
-  border: 1px solid rgba(245, 149, 74, 0.3);
+  background-color: rgba(245, 92, 39, 0.1);
+  border: 1px solid rgba(245, 92, 39, 0.3);
 }
 
 .song-row-img {

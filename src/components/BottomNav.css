@@ -5,15 +5,17 @@
   transform: translateX(-50%);
   width: calc(100% - 32px);
   max-width: 448px;
-  background-color: var(--bg-color);
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-pill);
   padding: 8px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--glass-shadow);
   z-index: 100;
-  border: none;
+  border: var(--glass-border);
 }
 
 .nav-item {
@@ -28,9 +30,9 @@
 }
 
 .nav-item.active {
-  background-color: var(--bg-color);
+  background-color: var(--hover-bg);
   color: var(--card-orange);
-  box-shadow: var(--neu-shadow-in);
+  box-shadow: none;
   padding: 10px 20px;
 }
 

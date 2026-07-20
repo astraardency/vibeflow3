@@ -4,14 +4,33 @@
 }
 
 .hero-card {
-  background: var(--bg-color);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 30px var(--spacing-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
   color: var(--text-color);
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(245, 92, 39, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-content, .hero-icon {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-content {

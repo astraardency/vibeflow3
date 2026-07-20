@@ -537,7 +537,8 @@ export const searchPlaylists = async (query, limit = 20) => {
           title: decodeHTMLEntities(playlist.name || playlist.title || 'Untitled Playlist'),
           img: imgUrl,
           songCount: playlist.songCount || playlist.shares || '0',
-          description: decodeHTMLEntities(playlist.description || '')
+          description: decodeHTMLEntities(playlist.description || ''),
+          url: playlist.url || playlist.perma_url || ''
         };
       });
     }
@@ -553,25 +554,47 @@ export const searchPlaylists = async (query, limit = 20) => {
  * @param {string} id - The playlist ID
  * @returns {Promise<Object|null>} Formatted playlist details with songs
  */
-export const getPlaylistDetails = async (id) => {
+export const getPlaylistDetails = async (id, limit = 50) => {
   try {
-    const data = await fetchWithRetry(`/playlists?id=${id}`);
+    let page = 1;
+    let allSongs = [];
+    let playlistInfo = null;
+    let keepFetching = true;
 
-    if (data && data.data) {
-      const playlist = data.data;
-      let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
-      if (playlist.image && Array.isArray(playlist.image) && playlist.image.length > 0) {
-        imgUrl = playlist.image[playlist.image.length - 1].url || playlist.image[playlist.image.length - 1].link || imgUrl;
-      } else if (typeof playlist.image === 'string') {
-        imgUrl = playlist.image;
+    while (keepFetching) {
+      const data = await fetchWithRetry(`/playlists?id=${id}&limit=${limit}&page=${page}`);
+
+      if (data && data.data) {
+        if (!playlistInfo) playlistInfo = data.data;
+        const currentSongs = data.data.songs || [];
+        allSongs = [...allSongs, ...currentSongs];
+        
+        const songCount = data.data.songCount || 0;
+        
+        if (currentSongs.length === 0 || currentSongs.length < limit || page >= 200) {
+          keepFetching = false;
+        } else {
+          page++;
+        }
+      } else {
+        keepFetching = false;
       }
-      let songs = playlist.songs ? playlist.songs.map(formatSongData).filter(Boolean) : [];
+    }
+
+    if (playlistInfo) {
+      let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
+      if (playlistInfo.image && Array.isArray(playlistInfo.image) && playlistInfo.image.length > 0) {
+        imgUrl = playlistInfo.image[playlistInfo.image.length - 1].url || playlistInfo.image[playlistInfo.image.length - 1].link || imgUrl;
+      } else if (typeof playlistInfo.image === 'string') {
+        imgUrl = playlistInfo.image;
+      }
+      let songs = allSongs.map(formatSongData).filter(Boolean);
 
       return {
-        id: playlist.id,
-        title: decodeHTMLEntities(playlist.name || playlist.title || 'Untitled Playlist'),
+        id: playlistInfo.id,
+        title: decodeHTMLEntities(playlistInfo.name || playlistInfo.title || 'Untitled Playlist'),
         img: imgUrl,
-        description: decodeHTMLEntities(playlist.description || ''),
+        description: decodeHTMLEntities(playlistInfo.description || ''),
         songs: songs
       };
     }

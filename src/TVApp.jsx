@@ -7,7 +7,7 @@ import { Home, Search, Library, User, Play, Pause, SkipForward, SkipBack, Shuffl
 import { doc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from './services/firebase';
 import { generateSecureToken } from './utils/cryptoUtils';
-import { searchSongs, searchArtists, searchPlaylists } from './services/saavn';
+import { searchSongs, searchArtists } from './services/saavn';
 import './TVApp.css';
 
 export default function TVApp() {
@@ -68,12 +68,11 @@ export default function TVApp() {
     
     setIsSearching(true);
     try {
-      const [songs, artists, pl] = await Promise.all([
+      const [songs, artists] = await Promise.all([
         searchSongs(query, 8),
-        searchArtists(query, 5),
-        searchPlaylists(query, 5)
+        searchArtists(query, 5)
       ]);
-      setSearchResults({ songs, artists, playlists: pl });
+      setSearchResults({ songs, artists, playlists: [] });
     } catch (e) {
       console.error(e);
     } finally {

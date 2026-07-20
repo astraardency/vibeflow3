@@ -18,7 +18,8 @@
   max-width: 480px;
   width: 90%;
   padding: 24px;
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--glass-shadow);
+  border: var(--glass-border);
   display: flex;
   flex-direction: column;
   gap: 20px;

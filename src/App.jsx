@@ -284,7 +284,7 @@ function App() {
   }
   const [showAllComposers, setShowAllComposers] = useState(false);
   // artistPlays and listeningActivity are synced via AuthContext
-  
+
   const lastCountedTrackIdRef = useRef(null);
 
   // Track plays when a new song starts
@@ -293,20 +293,20 @@ function App() {
       const trackIdentifier = currentTrack.id || currentTrack.title;
       if (lastCountedTrackIdRef.current !== trackIdentifier) {
         lastCountedTrackIdRef.current = trackIdentifier;
-        
+
         setPlaysCount(prev => {
           const newCount = prev + 1;
           localStorage.setItem('plays_count', newCount.toString());
           return newCount;
         });
-        
+
         setDailyPlays(prev => {
           const newDaily = [...prev];
           const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
           newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
           return newDaily;
         });
-        
+
         setArtistPlays(prev => {
           const newCounts = { ...prev };
           if (currentTrack.artist) {
@@ -318,7 +318,7 @@ function App() {
           localStorage.setItem('artist_plays', JSON.stringify(newCounts));
           return newCounts;
         });
-        
+
         setListeningActivity(prev => {
           const filtered = prev.filter(s => s.title !== currentTrack.title);
           const updated = [currentTrack, ...filtered].slice(0, 15);
@@ -466,6 +466,8 @@ function App() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [newPlaylistImg, setNewPlaylistImg] = useState('')
+  const [newPlaylistLink, setNewPlaylistLink] = useState('')
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false)
   const [showEditCoverModal, setShowEditCoverModal] = useState(false)
   const [editCoverImg, setEditCoverImg] = useState('')
   const { isAccountSettingsOpen, setIsAccountSettingsOpen } = useAppContext()
@@ -558,7 +560,7 @@ function App() {
           imageUrl: getSongImage(currentTrack) || ''
         });
       } catch (e) { console.log('Widget init update error', e); }
-      
+
       try {
         MediaSession.setMetadata({
           title: currentTrack.title || 'Vibeflow',
@@ -726,10 +728,12 @@ function App() {
   const handleVolumeChange = (e) => {
     const val = parseFloat(e.target.value);
 
-    if (audioRef.current) {
+    if (!isLocalDeviceActive) {
+      sendCommand('volume', { volume: val });
+    } else if (audioRef.current) {
       audioRef.current.volume = Math.min(val, 1);
     }
-    
+
     // Sync all volume sliders
     const sliders = document.querySelectorAll('input[type="range"].np-volume-slider, input[type="range"].fullscreen-volume-slider');
     sliders.forEach(slider => {
@@ -755,32 +759,34 @@ function App() {
   useEffect(() => {
     const root = document.documentElement;
     if (isDarkMode) {
-      root.style.setProperty('--bg-color', '#121215');
+      root.style.setProperty('--bg-color', '#000000'); // Premium OLED Black
       root.style.setProperty('--text-color', '#ffffff');
-      root.style.setProperty('--text-secondary', '#b0b0b0');
-      root.style.setProperty('--card-bg', '#1d1d23');
+      root.style.setProperty('--text-secondary', '#a1a1aa'); // Zinc 400
+      root.style.setProperty('--card-bg', 'rgba(24, 24, 27, 0.6)'); // Translucent dark
       root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.08)');
-      root.style.setProperty('--panel-bg', '#16161a');
-      root.style.setProperty('--input-bg', '#222228');
-      root.style.setProperty('--input-border', '#2a2a32');
-      root.style.setProperty('--hover-bg', 'rgba(255, 255, 255, 0.06)');
-      root.style.setProperty('--bar-bg', '#2d2d35');
-      root.style.setProperty('--artist-sheet-bg', '#16161a');
-      root.style.setProperty('--player-bar-bg', 'rgba(22, 22, 26, 0.85)');
+      root.style.setProperty('--panel-bg', 'rgba(9, 9, 11, 0.8)');
+      root.style.setProperty('--input-bg', 'rgba(255, 255, 255, 0.05)');
+      root.style.setProperty('--input-border', 'rgba(255, 255, 255, 0.1)');
+      root.style.setProperty('--hover-bg', 'rgba(255, 255, 255, 0.1)');
+      root.style.setProperty('--bar-bg', 'rgba(0, 0, 0, 0.7)');
+      root.style.setProperty('--artist-sheet-bg', '#000000');
+      root.style.setProperty('--player-bar-bg', 'rgba(0, 0, 0, 0.85)');
+      root.style.setProperty('--card-orange', '#ff5c39'); // Vibrant premium orange/red
       localStorage.setItem('theme', 'dark');
     } else {
-      root.style.setProperty('--bg-color', '#f7f7f9');
-      root.style.setProperty('--text-color', '#121212');
-      root.style.setProperty('--text-secondary', '#6b6b6b');
-      root.style.setProperty('--card-bg', '#ffffff');
-      root.style.setProperty('--border-color', '#eef0f3');
-      root.style.setProperty('--panel-bg', '#ffffff');
-      root.style.setProperty('--input-bg', '#ffffff');
-      root.style.setProperty('--input-border', '#e5e5e7');
-      root.style.setProperty('--hover-bg', '#f4f5f7');
-      root.style.setProperty('--bar-bg', '#e5e5e7');
-      root.style.setProperty('--artist-sheet-bg', '#ffffff');
-      root.style.setProperty('--player-bar-bg', 'rgba(255, 255, 255, 0.85)');
+      root.style.setProperty('--bg-color', '#bab9b9'); // Dull gray
+      root.style.setProperty('--text-color', '#1a1a1c');
+      root.style.setProperty('--text-secondary', '#5e5e65');
+      root.style.setProperty('--card-bg', 'rgba(230, 230, 230, 0.6)'); // Translucent gray
+      root.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.08)');
+      root.style.setProperty('--panel-bg', 'rgba(210, 210, 210, 0.9)');
+      root.style.setProperty('--input-bg', 'rgba(0, 0, 0, 0.04)');
+      root.style.setProperty('--input-border', 'rgba(0, 0, 0, 0.1)');
+      root.style.setProperty('--hover-bg', 'rgba(0, 0, 0, 0.06)');
+      root.style.setProperty('--bar-bg', 'rgba(183, 183, 188, 0.8)');
+      root.style.setProperty('--artist-sheet-bg', '#dedede');
+      root.style.setProperty('--player-bar-bg', 'rgba(200, 200, 200, 0.85)');
+      root.style.setProperty('--card-orange', '#f55c27'); // Slightly darker for light mode
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
@@ -952,9 +958,8 @@ function App() {
             isCommunity: true
           }));
           const uniquePlaylists = Array.from(new Map(mappedPlaylists.map(item => [item.title, item])).values());
-          
-          const saavnTrendingPlaylists = await searchPlaylists('Tamil', 10).catch(() => []);
-          setSearchPlaylistsResults([...uniquePlaylists, ...saavnTrendingPlaylists]);
+
+          setSearchPlaylistsResults([...uniquePlaylists]);
 
           const songs = await searchSongs('latest Tamil songs', 100)
           setSearchResults(songs)
@@ -991,9 +996,8 @@ function App() {
           }))
 
           const uniqueCommunityPlaylists = Array.from(new Map(communityPlaylists.map(item => [item.title, item])).values());
-          
-          const saavnPlaylists = await searchPlaylists(searchQuery, 10).catch(() => []);
-          setSearchPlaylistsResults([...uniqueCommunityPlaylists, ...saavnPlaylists])
+
+          setSearchPlaylistsResults([...uniqueCommunityPlaylists])
 
           // Network Search
           const songs = await searchSongs(searchQuery, 100)
@@ -1166,7 +1170,7 @@ function App() {
         const idbKey = exists.nativeUrl.replace('idb://', '');
         try {
           await deleteSongBlob(idbKey);
-        } catch(e) {
+        } catch (e) {
           console.error("Error deleting IDB blob", e);
         }
       }
@@ -1228,7 +1232,7 @@ function App() {
           try {
             await saveSongBlob(idbKey, blob);
             fileUri = `idb://${idbKey}`;
-          } catch(e) {
+          } catch (e) {
             console.error("IDB save failed", e);
           }
 
@@ -1590,44 +1594,111 @@ function App() {
   // Playlist Action Handlers
   const handleCreatePlaylist = async (e) => {
     e.preventDefault()
-    if (!newPlaylistName.trim()) return
-    const creator = currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : null) || localStorage.getItem('username') || 'Anonymous'
 
-    const docRef = doc(collection(db, 'playlists'))
-    const newId = docRef.id
+    const link = newPlaylistLink.trim();
+    let finalName = newPlaylistName.trim();
+    let finalImg = newPlaylistImg.trim();
+    let finalSongs = [];
 
-    const newPl = {
-      id: newId,
-      name: newPlaylistName.trim(),
-      img: newPlaylistImg.trim() || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop',
-      songs: [],
-      creator: creator,
-      uid: currentUser?.uid || localStorage.getItem('tv_uid') || null,
-      createdAt: Date.now()
+    if (!finalName && !link) {
+      triggerToast('Please enter a playlist name or paste a link.');
+      return;
     }
 
-    // Update local state immediately
-    const updatedPlaylists = [...playlists, newPl]
-    setPlaylists(updatedPlaylists)
-    localStorage.setItem('playlists', JSON.stringify(updatedPlaylists))
-
-    const newSaved = [...(savedPlaylistIds || []), newId];
-    setSavedPlaylistIds(newSaved);
-    localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
-
-    setNewPlaylistName('')
-    setNewPlaylistImg('')
-    setShowCreateModal(false)
-    triggerToast(`Created playlist "${newPl.name}"!`)
-    setSelectedPlaylist(newPl)
-    setActiveTab('create')
+    setIsCreatingPlaylist(true);
 
     try {
+      if (link) {
+        if (link.includes('spotify.com')) {
+          // Spotify oEmbed
+          try {
+            const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.title) finalName = finalName || data.title;
+              if (data.thumbnail_url) finalImg = finalImg || data.thumbnail_url;
+
+              if (data.title) {
+                const saavnMatches = await searchPlaylists(data.title, 1);
+                if (saavnMatches && saavnMatches.length > 0) {
+                  const plDetails = await getPlaylistDetails(saavnMatches[0].id);
+                  if (plDetails && plDetails.songs) {
+                    finalSongs = plDetails.songs;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Spotify import error:', err);
+          }
+        } else if (link.includes('jiosaavn.com')) {
+          try {
+            // extract the slug and token
+            const urlObj = new URL(link);
+            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+            const token = pathSegments[pathSegments.length - 1];
+            const nameSlug = pathSegments[pathSegments.length - 2];
+            if (nameSlug) {
+              const queryName = nameSlug.replace(/-/g, ' ');
+              const saavnMatches = await searchPlaylists(queryName, 20);
+              if (saavnMatches && saavnMatches.length > 0) {
+                // Try to find the exact match by token, otherwise fallback to first match
+                const exactMatch = saavnMatches.find(p => p.url && p.url.toLowerCase().includes(token.toLowerCase())) || saavnMatches[0];
+                const plDetails = await getPlaylistDetails(exactMatch.id);
+                if (plDetails) {
+                  finalName = finalName || plDetails.title;
+                  finalImg = finalImg || plDetails.img;
+                  if (plDetails.songs) finalSongs = plDetails.songs;
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Saavn import error:', err);
+          }
+        }
+      }
+
+      if (!finalName) finalName = 'Untitled Playlist';
+
+      const creator = currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : null) || localStorage.getItem('username') || 'Anonymous'
+
+      const docRef = doc(collection(db, 'playlists'))
+      const newId = docRef.id
+
+      const newPl = {
+        id: newId,
+        name: finalName,
+        img: finalImg || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop',
+        songs: finalSongs,
+        creator: creator,
+        uid: currentUser?.uid || localStorage.getItem('tv_uid') || null,
+        createdAt: Date.now()
+      }
+
+      // Update local state immediately
+      const updatedPlaylists = [...playlists, newPl]
+      setPlaylists(updatedPlaylists)
+      localStorage.setItem('playlists', JSON.stringify(updatedPlaylists))
+
+      const newSaved = [...(savedPlaylistIds || []), newId];
+      setSavedPlaylistIds(newSaved);
+      localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
+
+      setNewPlaylistName('')
+      setNewPlaylistImg('')
+      setNewPlaylistLink('')
+      setShowCreateModal(false)
+      triggerToast(`Created playlist "${newPl.name}"${finalSongs.length ? ` with ${finalSongs.length} songs` : ''}!`)
+      setSelectedPlaylist(newPl)
+      setActiveTab('create')
+
       // Try to sync with Firebase
       await setDoc(docRef, newPl)
     } catch (error) {
-      console.error("Error adding playlist to cloud: ", error)
-      triggerToast('Saved locally, but error syncing to cloud.')
+      console.error('Error creating playlist:', error)
+      triggerToast('Error creating playlist.');
+    } finally {
+      setIsCreatingPlaylist(false);
     }
   }
 
@@ -1746,9 +1817,9 @@ function App() {
     setIsSearchingPlaylistSongs(true)
     playlistSearchCounter.current += 1;
     const currentSearchId = playlistSearchCounter.current;
-    
+
     const results = await searchSongs(query)
-    
+
     if (playlistSearchCounter.current === currentSearchId) {
       setPlaylistSearchResults(results)
       setIsSearchingPlaylistSongs(false)
@@ -3070,7 +3141,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid #eef0f3', marginBottom: '10px' }}>
+              <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
                 <span>TITLE & ARTIST</span>
                 <span>ACTION</span>
               </div>
@@ -3170,263 +3241,263 @@ function App() {
                   }}>
                     <div style={{ position: 'relative', cursor: isCreator ? 'pointer' : 'default' }} onClick={() => {
                       if (!isCreator) {
-                    triggerToast('Only the playlist creator can change the cover.');
-                    return;
-                  }
-                  setEditCoverImg(selectedPlaylist.img || '');
-                  setShowEditCoverModal(true);
-                }}>
-                  {selectedPlaylist.img ? (
-                    <img
-                      src={selectedPlaylist.img}
-                      alt={selectedPlaylist.name}
-                      style={{
-                        width: '180px',
-                        height: '180px',
-                        objectFit: 'cover',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-                      }}
-                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop'; }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '180px',
-                      height: '180px',
-                      background: 'linear-gradient(135deg, var(--card-orange), var(--neon-cyan))',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                        triggerToast('Only the playlist creator can change the cover.');
+                        return;
+                      }
+                      setEditCoverImg(selectedPlaylist.img || '');
+                      setShowEditCoverModal(true);
                     }}>
-                      <ListMusic size={64} color="white" />
-                    </div>
-                  )}
-                  {isCreator && (
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'rgba(0,0,0,0.4)',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'opacity 0.2s'
-                    }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                    >
-                      <span style={{ color: 'white', fontWeight: '600' }}>Change Cover</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="playlist-banner-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: '1 1 200px' }}>
-                  <span className="playlist-badge" style={{ marginBottom: '8px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', color: 'var(--text-secondary)' }}>COMMUNITY PLAYLIST</span>
-                  <h2 className="playlist-banner-title" style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-color)', margin: '0 0 8px 0', lineHeight: '1.2' }}>{selectedPlaylist.name}</h2>
-                  <p className="playlist-banner-desc" style={{ color: 'var(--text-secondary)', margin: '0 0 20px 0', fontSize: '14px' }}>{(selectedPlaylist.songs?.length || 0)} songs • Created by {selectedPlaylist.creator || 'Anonymous'}</p>
-
-                  {(selectedPlaylist.songs?.length || 0) > 0 && (
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button
-                        onClick={() => shuffleQueue(selectedPlaylist.songs || [])}
-                        className="focusable"
-                        tabIndex={0}
-                        style={{
-                          background: 'var(--card-orange)',
-                          border: 'none',
-                          color: 'white',
-                          padding: '10px 24px',
-                          borderRadius: '24px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 14px rgba(245, 149, 74, 0.4)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <Play size={16} fill="white" />
-                        Shuffle Play
-                      </button>
-
-                      {/* Add to Library button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const safeIds = savedPlaylistIds || [];
-                          if (safeIds.includes(selectedPlaylist.id)) {
-                            // Remove from library
-                            const updatedSaved = safeIds.filter(pid => pid !== selectedPlaylist.id);
-                            setSavedPlaylistIds(updatedSaved);
-                            localStorage.setItem('savedPlaylistIds', JSON.stringify(updatedSaved));
-                            triggerToast('Removed from your Library');
-                          } else {
-                            // Add to library
-                            const newSaved = [...safeIds, selectedPlaylist.id];
-                            setSavedPlaylistIds(newSaved);
-                            localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
-                            triggerToast('Added to your Library');
-                          }
-                        }}
-                        className="focusable"
-                        tabIndex={0}
-                        style={{
-                          background: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'rgba(255,255,255,0.1)' : 'var(--neon-cyan)',
-                          border: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? '1px solid rgba(255,255,255,0.2)' : 'none',
-                          color: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'var(--text-color)' : '#000',
-                          padding: '10px 20px',
-                          borderRadius: '24px',
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'none' : '0 4px 14px rgba(0, 229, 204, 0.4)'
-                        }}
-                      >
-                        {(savedPlaylistIds || []).includes(selectedPlaylist.id) ? (
-                          <>
-                            <Check size={16} color="var(--text-color)" />
-                            Saved
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={16} color="#000" />
-                            Add to Library
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
-                <span>TITLE & ARTIST</span>
-                <span>ACTION</span>
-              </div>
-
-              <div className="playlist-songs-list hide-scrollbar" style={{ overflowY: 'auto' }}>
-                {(selectedPlaylist.songs?.length || 0) === 0 ? (
-                  <div className="no-songs-placeholder" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    No songs in this playlist yet. Add songs below!
-                  </div>
-                ) : (
-                  (selectedPlaylist.songs || []).map((song, idx) => (
-                    <div
-                      key={song.id || idx}
-                      className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
-                      tabIndex={0}
-                      onClick={() => playSong(song, idx, (selectedPlaylist.songs || []), { triggerToast })}
-
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
-                    >
-                      <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="playlist-song-img-container" style={{ position: 'relative' }}>
-                          <img
-                            src={getSongImage(song)}
-                            alt={song.title}
-                            style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', display: 'block' }}
-                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=200&auto=format&fit=crop'; }}
-                          />
-                          {currentTrack?.title === song.title && isPlaying && (
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>
-                              <span style={{ color: 'white', fontSize: '12px' }}>▶</span>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="playlist-song-title">{song.title}</div>
-                          <div className="playlist-song-artist">{song.artist}</div>
-                        </div>
-                      </div>
-                      {isCreator && (
-                        <button
-                          className="remove-song-btn focusable"
-                          tabIndex={0}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removeSongFromPlaylist(selectedPlaylist.id, song.id)
+                      {selectedPlaylist.img ? (
+                        <img
+                          src={selectedPlaylist.img}
+                          alt={selectedPlaylist.name}
+                          style={{
+                            width: '180px',
+                            height: '180px',
+                            objectFit: 'cover',
+                            borderRadius: '12px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
                           }}
-                          style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}
+                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop'; }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '180px',
+                          height: '180px',
+                          background: 'linear-gradient(135deg, var(--card-orange), var(--neon-cyan))',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                        }}>
+                          <ListMusic size={64} color="white" />
+                        </div>
+                      )}
+                      {isCreator && (
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0,0,0,0.4)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0,
+                          transition: 'opacity 0.2s'
+                        }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
                         >
-                          Remove
-                        </button>
+                          <span style={{ color: 'white', fontWeight: '600' }}>Change Cover</span>
+                        </div>
                       )}
                     </div>
-                  ))
-                )}
-              </div>
 
-              {/* Add Songs Section */}
-              {isCreator && (
-                <div className="playlist-add-songs-section">
-                  <h3 className="section-title">Add Songs</h3>
-                <form onSubmit={handlePlaylistSearch} className="search-form" style={{ marginBottom: '15px' }}>
-                  <div className="search-input-wrapper">
-                    <Search size={18} className="search-box-icon" />
-                    <input
-                      type="text"
-                      placeholder="Search for songs to add..."
-                      value={playlistSearchQuery}
-                      onChange={(e) => setPlaylistSearchQuery(e.target.value)}
-                      onKeyUp={(e) => handlePlaylistSearch(e, e.target.value)}
-                      className="search-input-redesign focusable"
-                      tabIndex={0}
-                    />
-                  </div>
-                </form>
+                    <div className="playlist-banner-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: '1 1 200px' }}>
+                      <span className="playlist-badge" style={{ marginBottom: '8px', fontSize: '12px', fontWeight: '700', letterSpacing: '1px', color: 'var(--text-secondary)' }}>COMMUNITY PLAYLIST</span>
+                      <h2 className="playlist-banner-title" style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-color)', margin: '0 0 8px 0', lineHeight: '1.2' }}>{selectedPlaylist.name}</h2>
+                      <p className="playlist-banner-desc" style={{ color: 'var(--text-secondary)', margin: '0 0 20px 0', fontSize: '14px' }}>{(selectedPlaylist.songs?.length || 0)} songs • Created by {selectedPlaylist.creator || 'Anonymous'}</p>
 
-                {isSearchingPlaylistSongs && (
-                  <div className="loading-spinner" style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>Searching library...</div>
-                )}
+                      {(selectedPlaylist.songs?.length || 0) > 0 && (
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          <button
+                            onClick={() => shuffleQueue(selectedPlaylist.songs || [])}
+                            className="focusable"
+                            tabIndex={0}
+                            style={{
+                              background: 'var(--card-orange)',
+                              border: 'none',
+                              color: 'white',
+                              padding: '10px 24px',
+                              borderRadius: '24px',
+                              fontSize: '13px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 14px rgba(245, 149, 74, 0.4)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <Play size={16} fill="white" />
+                            Shuffle Play
+                          </button>
 
-                <div className="playlist-search-results hide-scrollbar" style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                  {playlistSearchQuery.trim() === '' && !isSearchingPlaylistSongs && <div style={{ padding: '0 10px 10px 10px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '600' }}>Suggested Songs</div>}
-                  {(playlistSearchQuery.trim() === '' ? getSuggestedSongs() : playlistSearchResults).map((song) => {
-                    const isAdded = (selectedPlaylist.songs || []).some(s => s.id === song.id || s.title === song.title)
-                    return (
-                      <div key={song.id} className="search-result-item focusable" tabIndex={0} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', background: 'var(--card-bg)' }}>
-                        <img src={song.img} alt={song.title} className="search-result-img" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
-                        <div className="search-result-info" style={{ flex: 1, marginLeft: '10px', overflow: 'hidden' }}>
-                          <div className="search-result-title" style={{ fontSize: '14px', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.title}</div>
-                          <div className="search-result-artist" style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.artist}</div>
+                          {/* Add to Library button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const safeIds = savedPlaylistIds || [];
+                              if (safeIds.includes(selectedPlaylist.id)) {
+                                // Remove from library
+                                const updatedSaved = safeIds.filter(pid => pid !== selectedPlaylist.id);
+                                setSavedPlaylistIds(updatedSaved);
+                                localStorage.setItem('savedPlaylistIds', JSON.stringify(updatedSaved));
+                                triggerToast('Removed from your Library');
+                              } else {
+                                // Add to library
+                                const newSaved = [...safeIds, selectedPlaylist.id];
+                                setSavedPlaylistIds(newSaved);
+                                localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
+                                triggerToast('Added to your Library');
+                              }
+                            }}
+                            className="focusable"
+                            tabIndex={0}
+                            style={{
+                              background: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'rgba(255,255,255,0.1)' : 'var(--neon-cyan)',
+                              border: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                              color: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'var(--text-color)' : '#000',
+                              padding: '10px 20px',
+                              borderRadius: '24px',
+                              fontSize: '13px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: (savedPlaylistIds || []).includes(selectedPlaylist.id) ? 'none' : '0 4px 14px rgba(0, 229, 204, 0.4)'
+                            }}
+                          >
+                            {(savedPlaylistIds || []).includes(selectedPlaylist.id) ? (
+                              <>
+                                <Check size={16} color="var(--text-color)" />
+                                Saved
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={16} color="#000" />
+                                Add to Library
+                              </>
+                            )}
+                          </button>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (!isAdded) {
-                              addSongToPlaylist(selectedPlaylist.id, song)
-                            }
-                          }}
-                          className="focusable"
-                          tabIndex={0}
-                          style={{
-                            background: isAdded ? 'transparent' : 'var(--card-orange)',
-                            border: isAdded ? '1px solid rgba(0,0,0,0.1)' : 'none',
-                            color: isAdded ? 'var(--text-color)' : 'white',
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            cursor: isAdded ? 'default' : 'pointer',
-                            fontWeight: '500'
-                          }}
-                        >
-                          {isAdded ? 'Added' : 'Add'}
-                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
+                    <span>TITLE & ARTIST</span>
+                    <span>ACTION</span>
+                  </div>
+
+                  <div className="playlist-songs-list hide-scrollbar" style={{ overflowY: 'auto' }}>
+                    {(selectedPlaylist.songs?.length || 0) === 0 ? (
+                      <div className="no-songs-placeholder" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        No songs in this playlist yet. Add songs below!
                       </div>
-                    )
-                  })}
+                    ) : (
+                      (selectedPlaylist.songs || []).map((song, idx) => (
+                        <div
+                          key={song.id || idx}
+                          className={`playlist-song-item focusable ${currentTrack?.title === song.title ? 'active-track' : ''}`}
+                          tabIndex={0}
+                          onClick={() => playSong(song, idx, (selectedPlaylist.songs || []), { triggerToast })}
+
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 15px', borderRadius: '8px', cursor: 'pointer', marginBottom: '8px' }}
+                        >
+                          <div className="playlist-song-info" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div className="playlist-song-img-container" style={{ position: 'relative' }}>
+                              <img
+                                src={getSongImage(song)}
+                                alt={song.title}
+                                style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', display: 'block' }}
+                                onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=200&auto=format&fit=crop'; }}
+                              />
+                              {currentTrack?.title === song.title && isPlaying && (
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>
+                                  <span style={{ color: 'white', fontSize: '12px' }}>▶</span>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="playlist-song-title">{song.title}</div>
+                              <div className="playlist-song-artist">{song.artist}</div>
+                            </div>
+                          </div>
+                          {isCreator && (
+                            <button
+                              className="remove-song-btn focusable"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeSongFromPlaylist(selectedPlaylist.id, song.id)
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Add Songs Section */}
+                  {isCreator && (
+                    <div className="playlist-add-songs-section">
+                      <h3 className="section-title">Add Songs</h3>
+                      <form onSubmit={handlePlaylistSearch} className="search-form" style={{ marginBottom: '15px' }}>
+                        <div className="search-input-wrapper">
+                          <Search size={18} className="search-box-icon" />
+                          <input
+                            type="text"
+                            placeholder="Search for songs to add..."
+                            value={playlistSearchQuery}
+                            onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                            onKeyUp={(e) => handlePlaylistSearch(e, e.target.value)}
+                            className="search-input-redesign focusable"
+                            tabIndex={0}
+                          />
+                        </div>
+                      </form>
+
+                      {isSearchingPlaylistSongs && (
+                        <div className="loading-spinner" style={{ color: 'var(--text-secondary)', fontSize: '14px', textAlign: 'center', padding: '20px' }}>Searching library...</div>
+                      )}
+
+                      <div className="playlist-search-results hide-scrollbar" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                        {playlistSearchQuery.trim() === '' && !isSearchingPlaylistSongs && <div style={{ padding: '0 10px 10px 10px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '600' }}>Suggested Songs</div>}
+                        {(playlistSearchQuery.trim() === '' ? getSuggestedSongs() : playlistSearchResults).map((song) => {
+                          const isAdded = (selectedPlaylist.songs || []).some(s => s.id === song.id || s.title === song.title)
+                          return (
+                            <div key={song.id} className="search-result-item focusable" tabIndex={0} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', background: 'var(--card-bg)' }}>
+                              <img src={song.img} alt={song.title} className="search-result-img" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                              <div className="search-result-info" style={{ flex: 1, marginLeft: '10px', overflow: 'hidden' }}>
+                                <div className="search-result-title" style={{ fontSize: '14px', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.title}</div>
+                                <div className="search-result-artist" style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.artist}</div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (!isAdded) {
+                                    addSongToPlaylist(selectedPlaylist.id, song)
+                                  }
+                                }}
+                                className="focusable"
+                                tabIndex={0}
+                                style={{
+                                  background: isAdded ? 'transparent' : 'var(--card-orange)',
+                                  border: isAdded ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                                  color: isAdded ? 'var(--text-color)' : 'white',
+                                  padding: '6px 12px',
+                                  borderRadius: '20px',
+                                  fontSize: '12px',
+                                  cursor: isAdded ? 'default' : 'pointer',
+                                  fontWeight: '500'
+                                }}
+                              >
+                                {isAdded ? 'Added' : 'Add'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              )}
-            </div>
-          );
-          })()
+              );
+            })()
           ) : (
             <div className="playlists-screen">
               <div className="playlists-header-container">
@@ -3478,25 +3549,25 @@ function App() {
                   .filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id))
                   .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
                   .map((playlist, pIdx) => {
-                  const gradients = [
-                    'linear-gradient(135deg, #f5954a 0%, #ff6b9d 100%)',
-                    'linear-gradient(135deg, #00e5cc 0%, #007cf0 100%)',
-                    'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)',
-                    'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
-                    'linear-gradient(135deg, #dc2626 0%, #f59e0b 100%)',
-                  ];
-                  const grad = gradients[pIdx % gradients.length];
-                  return (
-                    <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)}>
-                      <div className="collection-card-art" style={playlist.img ? { backgroundImage: `url("${playlist.img}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : { background: grad }}>
-                        {!playlist.img && <ListMusic size={32} color="white" />}
-                        <div className="collection-card-art-shine"></div>
-                      </div>
-                      <div className="collection-card-info">
-                        <div className="collection-card-title">{playlist.name}</div>
-                        <div className="collection-card-desc">{(playlist.songs?.length || 0)} songs • by @{playlist.creator || 'Anonymous'}</div>
-                      </div>
-                      {/* <button
+                    const gradients = [
+                      'linear-gradient(135deg, #f5954a 0%, #ff6b9d 100%)',
+                      'linear-gradient(135deg, #00e5cc 0%, #007cf0 100%)',
+                      'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)',
+                      'linear-gradient(135deg, #059669 0%, #0284c7 100%)',
+                      'linear-gradient(135deg, #dc2626 0%, #f59e0b 100%)',
+                    ];
+                    const grad = gradients[pIdx % gradients.length];
+                    return (
+                      <div key={playlist.id} className="collection-card focusable" tabIndex={0} onClick={() => setSelectedPlaylist(playlist)}>
+                        <div className="collection-card-art" style={playlist.img ? { backgroundImage: `url("${playlist.img}")`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : { background: grad }}>
+                          {!playlist.img && <ListMusic size={32} color="white" />}
+                          <div className="collection-card-art-shine"></div>
+                        </div>
+                        <div className="collection-card-info">
+                          <div className="collection-card-title">{playlist.name}</div>
+                          <div className="collection-card-desc">{(playlist.songs?.length || 0)} songs • by @{playlist.creator || 'Anonymous'}</div>
+                        </div>
+                        {/* <button
                         className="collection-card-delete-btn focusable"
                         tabIndex={0}
                         onClick={(e) => handleDeletePlaylist(playlist.id, e)}
@@ -3504,9 +3575,9 @@ function App() {
                       >
                         ×
                       </button> */}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
 
                 {playlists.filter(p => !p.hidden && (savedPlaylistIds || []).includes(p.id)).length === 0 && (
                   <div className="empty-playlists-msg">
@@ -3546,7 +3617,7 @@ function App() {
             </div>
 
             {(() => {
-              const maxPlays = Math.max(...(dailyPlays || [0,0,0,0,0,0,0]));
+              const maxPlays = Math.max(...(dailyPlays || [0, 0, 0, 0, 0, 0, 0]));
               const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
               const peakDayIdx = (dailyPlays || []).indexOf(maxPlays);
               const peakDayStr = maxPlays > 0 ? days[peakDayIdx] : '';
@@ -3667,7 +3738,7 @@ function App() {
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-color, #000)', margin: '0 0 4px 0' }}>Weekly Overview</h3>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary, rgba(0,0,0,0.5))', marginBottom: '24px', fontWeight: '500' }}>
                   {(() => {
-                    const playsArr = dailyPlays || [0,0,0,0,0,0,0];
+                    const playsArr = dailyPlays || [0, 0, 0, 0, 0, 0, 0];
                     const totalPlays = playsArr.reduce((a, b) => a + b, 0);
                     const activeDays = playsArr.filter(p => p > 0).length || 1;
                     return `Avg. ${Math.round(totalPlays / activeDays)} songs / day`;
@@ -4429,7 +4500,7 @@ function App() {
                     <button className="fullscreen-icon-btn" onClick={() => setIsDeviceModalOpen(true)}>
                       <Cast size={20} color={activeDeviceId && !isLocalDeviceActive ? 'var(--card-orange, #f5954a)' : 'white'} />
                     </button>
-                    
+
                     <button className="fullscreen-icon-btn" onClick={() => setIsLiveConnectOpen(true)} title="Live Connect">
                       <Radio size={20} color={isLiveConnected ? 'var(--card-orange, #f5954a)' : 'white'} />
                     </button>
@@ -4552,6 +4623,27 @@ function App() {
           }}>
             <h3 style={{ color: 'var(--text-color)', fontSize: '18px', fontWeight: '600', marginBottom: '16px', margin: 0 }}>Create New Playlist</h3>
             <form onSubmit={handleCreatePlaylist}>
+              <div style={{ position: 'relative', margin: '16px 0 12px 0' }}>
+                <input
+                  type="text"
+                  placeholder="Paste Spotify or JioSaavn Playlist Link"
+                  value={newPlaylistLink}
+                  onChange={(e) => setNewPlaylistLink(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'var(--input-bg)',
+                    border: '1px solid var(--card-orange)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    color: 'var(--text-color)',
+                    outline: 'none',
+                    fontSize: '14px',
+                    boxShadow: '0 0 10px rgba(230, 92, 0, 0.1)'
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div style={{ textAlign: 'center', color: 'var(--text-color)', margin: '8px 0', opacity: 0.6, fontSize: '12px', fontWeight: '500' }}>OR CREATE MANUALLY</div>
               <input
                 type="text"
                 placeholder="Playlist name"
@@ -4564,12 +4656,10 @@ function App() {
                   borderRadius: '8px',
                   padding: '12px',
                   color: 'var(--text-color)',
-                  marginTop: '16px',
                   marginBottom: '12px',
                   outline: 'none',
                   fontSize: '14px'
                 }}
-                autoFocus
               />
               <input
                 type="text"
@@ -4592,30 +4682,42 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
+                  disabled={isCreatingPlaylist}
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--border-color)',
                     color: 'var(--text-color)',
                     padding: '8px 16px',
                     borderRadius: '20px',
-                    cursor: 'pointer'
+                    cursor: isCreatingPlaylist ? 'not-allowed' : 'pointer',
+                    opacity: isCreatingPlaylist ? 0.5 : 1
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={isCreatingPlaylist}
                   style={{
                     background: 'var(--card-orange)',
                     border: 'none',
                     color: 'white',
                     padding: '8px 16px',
                     borderRadius: '20px',
-                    cursor: 'pointer',
-                    fontWeight: '500'
+                    cursor: isCreatingPlaylist ? 'not-allowed' : 'pointer',
+                    fontWeight: '500',
+                    opacity: isCreatingPlaylist ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                 >
-                  Create
+                  {isCreatingPlaylist ? (
+                    <>
+                      <div style={{ width: 14, height: 14, border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                      Importing...
+                    </>
+                  ) : 'Create'}
                 </button>
               </div>
             </form>
@@ -4697,7 +4799,7 @@ function App() {
                   <span style={{ fontWeight: '500' }}>{liveGuestCount} {liveGuestCount === 1 ? 'Listener' : 'Listeners'} Connected</span>
                 </div>
                 <button
-                  onClick={disconnectLiveSession}
+                  onClick={() => disconnectLiveSession(triggerToast)}
                   style={{
                     background: '#ff4444',
                     border: 'none',
@@ -4721,7 +4823,7 @@ function App() {
 
                 <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <button
-                    onClick={startLiveSession}
+                    onClick={() => startLiveSession(triggerToast)}
                     style={{
                       background: 'var(--card-orange, #f5954a)',
                       border: 'none',
@@ -4768,7 +4870,7 @@ function App() {
                     }}
                   />
                   <button
-                    onClick={() => joinLiveSession()}
+                    onClick={() => joinLiveSession(null, triggerToast)}
                     disabled={joinCodeInput.length < 4}
                     style={{
                       background: joinCodeInput.length >= 4 ? 'white' : 'rgba(255,255,255,0.1)',

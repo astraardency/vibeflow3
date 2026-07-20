@@ -8,7 +8,7 @@ import AsyncArtistImage from '../components/AsyncArtistImage';
 import { getSongImage } from '../utils/playerUtils';
 import defaultSongsRaw from '../data/songs.js';
 import { db } from '../services/firebase';
-import { updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { updateDoc, doc, deleteDoc, setDoc } from 'firebase/firestore';
 
 const defaultSongs = defaultSongsRaw.filter(song => song.language?.toLowerCase() === 'tamil');
 
@@ -197,7 +197,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
             </div>
           </div>
 
-          <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid #eef0f3', marginBottom: '10px' }}>
+          <div className="playlist-tracklist-header" style={{ display: 'grid', gridTemplateColumns: '1fr auto', padding: '10px 15px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
             <span>TITLE & ARTIST</span>
             <span>ACTION</span>
           </div>
@@ -309,9 +309,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                         const updatedPlaylists = playlists.map(p => p.id === selectedPlaylist.id ? updatedPlaylist : p);
                         setPlaylists(updatedPlaylists);
                         try { localStorage.setItem('playlists', JSON.stringify(updatedPlaylists)); } catch(e) { console.warn('Failed to save to localStorage:', e); }
-                        import('firebase/firestore').then(({ doc: fDoc, setDoc: fSetDoc }) => {
-                          fSetDoc(fDoc(db, 'playlists', selectedPlaylist.id), { img: url }, { merge: true }).catch(e => console.warn('Sync failed:', e));
-                        });
+                        setDoc(doc(db, 'playlists', selectedPlaylist.id), { img: url }, { merge: true }).catch(e => console.warn('Sync failed:', e));
                       }
                     } catch(e) { console.error(e) }
                   }}

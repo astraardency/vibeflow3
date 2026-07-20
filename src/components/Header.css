@@ -24,33 +24,34 @@
 }
 
 .download-btn {
-  background: var(--bg-color);
-  border: none;
+  background: var(--glass-bg);
+  border: var(--glass-border);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-color);
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--subtle-shadow);
   border-radius: var(--radius-pill);
   padding: 8px 16px;
   transition: all 0.2s ease;
 }
 
 .download-btn:active {
-  box-shadow: var(--neu-shadow-in);
+  transform: scale(0.95);
 }
 
 .profile-avatar {
   width: 36px;
   height: 36px;
-  background-color: var(--bg-color);
+  background-color: var(--card-bg);
   border-radius: var(--radius-pill);
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--subtle-shadow);
+  border: var(--glass-border);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .profile-avatar:active {
-  box-shadow: var(--neu-shadow-in);
+  transform: scale(0.95);
 }

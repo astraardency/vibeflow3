@@ -108,6 +108,18 @@ export const PlayerProvider = ({ children }) => {
         case 'PLAY_SONG':
           playSong(payload.song, payload.index, payload.queueToUse);
           break;
+        case 'seek':
+          if (Capacitor.isNativePlatform()) {
+            NativeAudio.seek({ time: payload.time });
+          } else if (audioRef.current) {
+            audioRef.current.currentTime = payload.time;
+          }
+          break;
+        case 'volume':
+          if (!Capacitor.isNativePlatform() && audioRef.current) {
+            audioRef.current.volume = payload.volume;
+          }
+          break;
         case 'transfer_playback':
           if (payload.track) {
             playSong(

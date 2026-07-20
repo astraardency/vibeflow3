@@ -1,26 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg-color: #e0e5ec;
-  --text-color: #333333;
-  --text-secondary: #6b6b6b;
-  --card-dark: #e0e5ec;
-  --card-orange: #f5954a;
-  
-  --neu-light: #ffffff;
-  --neu-dark: #a3b1c6;
-  --neu-shadow-out: 9px 9px 16px rgba(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
-  --neu-shadow-in: inset 6px 6px 10px 0 rgba(163, 177, 198, 0.7), inset -6px -6px 10px 0 rgba(255, 255, 255, 0.8);
-  --neu-shadow-hover: 12px 12px 20px rgba(163, 177, 198, 0.7), -12px -12px 20px rgba(255, 255, 255, 0.6);
-  --neu-shadow-sm: 4px 4px 8px rgba(163, 177, 198, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.4);
-  
-  --font-family: 'Inter', sans-serif;
-  
+  --bg-color: #bab9b9;
+  --text-color: #1a1a1c;
+  --text-secondary: #5e5e65;
+  --card-dark: #d2d2d2;
+  --card-orange: #f55c27;
+  --card-bg: rgba(230, 230, 230, 0.6);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --panel-bg: rgba(210, 210, 210, 0.9);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --input-border: rgba(0, 0, 0, 0.1);
+  --hover-bg: rgba(0, 0, 0, 0.06);
+  --bar-bg: rgba(183, 183, 188, 0.8);
+  --artist-sheet-bg: #dedede;
+  --player-bar-bg: rgba(200, 200, 200, 0.85);
+
+  /* Glassmorphism Variables */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+  --glass-blur: blur(16px);
+  --subtle-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-pill: 9999px;
-  
+
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -30,17 +39,27 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-color: #292d32;
+    --bg-color: #000000;
     --text-color: #ffffff;
-    --text-secondary: #a0a0a0;
-    --card-dark: #292d32;
-    
-    --neu-light: #383d44;
-    --neu-dark: #1a1c20;
-    --neu-shadow-out: 9px 9px 16px rgba(0, 0, 0, 0.5), -9px -9px 16px rgba(255, 255, 255, 0.05);
-    --neu-shadow-in: inset 6px 6px 10px 0 rgba(0, 0, 0, 0.6), inset -6px -6px 10px 0 rgba(255, 255, 255, 0.05);
-    --neu-shadow-hover: 12px 12px 20px rgba(0, 0, 0, 0.6), -12px -12px 20px rgba(255, 255, 255, 0.05);
-    --neu-shadow-sm: 4px 4px 8px rgba(0, 0, 0, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.05);
+    --text-secondary: #a1a1aa;
+    --card-dark: #121212;
+    --card-bg: rgba(24, 24, 27, 0.6);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --panel-bg: rgba(9, 9, 11, 0.8);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --bar-bg: rgba(0, 0, 0, 0.7);
+    --artist-sheet-bg: #000000;
+    --player-bar-bg: rgba(0, 0, 0, 0.85);
+    --card-orange: #ff5c39;
+
+    /* Glassmorphism Variables */
+    --glass-bg: rgba(18, 18, 18, 0.65);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --glass-blur: blur(24px);
+    --subtle-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -49,8 +68,10 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
-  scrollbar-width: none;  /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 ::-webkit-scrollbar {
@@ -67,7 +88,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 700;
 }
 
@@ -77,9 +103,12 @@ p {
 
 /* Utility for hiding scrollbar in horizontal lists */
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -91,8 +120,9 @@ p {
   min-height: 100vh;
   background-color: var(--bg-color);
   position: relative;
-  padding-bottom: 100px; /* Space for bottom nav */
-  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  padding-bottom: 100px;
+  /* Space for bottom nav */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
 @media (min-width: 768px) {
@@ -133,16 +163,20 @@ p {
 
 /* Glassmorphism & UI Utilities */
 .glass-panel {
-  background: var(--bg-color);
-  box-shadow: var(--neu-shadow-out);
-  border: none;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
   border-radius: var(--radius-lg);
 }
 
 .glass-nav {
-  background: var(--bg-color);
-  box-shadow: var(--neu-shadow-sm);
-  border: none;
+  background: var(--glass-bg);
+  box-shadow: var(--subtle-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: var(--glass-border);
 }
 
 /* Animation Utilities */
@@ -159,8 +193,15 @@ p {
 }
 
 @keyframes playerSlideUp {
-  0% { transform: translateY(100%); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .player-slide-down {
@@ -168,8 +209,15 @@ p {
 }
 
 @keyframes playerSlideDown {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(100%); opacity: 0; }
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
 }
 
 /* Animated Gradient Background for Full Screen Player */
@@ -180,9 +228,17 @@ p {
 }
 
 @keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .album-shadow {
@@ -203,7 +259,7 @@ body.scanner-active .mobile-header {
 }
 
 /* Hide all app content and settings menus while scanning */
-body.scanner-active .app-container > *:not(.account-overlay),
+body.scanner-active .app-container>*:not(.account-overlay),
 body.scanner-active .account-container {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -230,18 +286,22 @@ body.scanner-active .account-container {
     transform-origin: center center;
     animation-timing-function: ease-out;
   }
+
   10% {
     transform: scale(1.15);
     animation-timing-function: ease-in;
   }
+
   17% {
     transform: scale(1.05);
     animation-timing-function: ease-out;
   }
+
   33% {
     transform: scale(1.2);
     animation-timing-function: ease-in;
   }
+
   45% {
     transform: scale(1);
     animation-timing-function: ease-out;

@@ -16,7 +16,8 @@
   flex-shrink: 0;
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--subtle-shadow);
+  border: var(--glass-border);
 }
 
 .carousel-img {
@@ -41,13 +42,12 @@
 .song-card .carousel-img {
   height: 160px;
   border-radius: var(--radius-md);
-  box-shadow: var(--neu-shadow-out);
+  box-shadow: var(--subtle-shadow);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
   will-change: transform, box-shadow;
 }
 .song-card:active .carousel-img {
-  transform: scale(0.95);
-  box-shadow: var(--neu-shadow-in);
+  transform: scale(0.92);
 }
 .song-info {
   margin-top: var(--spacing-sm);

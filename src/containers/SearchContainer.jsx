@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ArrowLeft, Play, Pause, Check } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,22 @@ const SearchContainer = () => {
   const [selectedSaavnPlaylist, setSelectedSaavnPlaylist] = useState(null);
   const [isLoadingSaavnPlaylist, setIsLoadingSaavnPlaylist] = useState(false);
 
+  useEffect(() => {
+    if (selectedSaavnPlaylist && selectedSaavnPlaylist.isCommunity) {
+      const updated = playlists.find(p => p.id === selectedSaavnPlaylist.id);
+      if (updated && (updated.img !== selectedSaavnPlaylist.img || updated.name !== selectedSaavnPlaylist.title || updated.songs?.length !== selectedSaavnPlaylist.songs?.length)) {
+        setSelectedSaavnPlaylist(prev => ({
+          ...prev,
+          title: updated.name,
+          img: updated.img,
+          description: `Created by ${updated.creator}`,
+          songs: updated.songs || [],
+          isHidden: updated.hidden
+        }));
+      }
+    }
+  }, [playlists]);
+
   const handleSearch = async (e) => {
     if (e) e.preventDefault()
     if (!searchQuery.trim()) return
@@ -40,7 +56,7 @@ const SearchContainer = () => {
       songCount: p.songs?.length || 0
     }))
 
-    const uniqueCommunityPlaylists = Array.from(new Map(communityPlaylists.map(item => [item.title, item])).values());
+    const uniqueCommunityPlaylists = Array.from(new Map(communityPlaylists.map(item => [item.id, item])).values());
 
     setSearchResults(songs)
     setSearchPlaylistsResults(uniqueCommunityPlaylists)
@@ -72,7 +88,7 @@ const SearchContainer = () => {
 
     setIsLoadingSaavnPlaylist(true)
     try {
-      const details = await getPlaylistDetails(playlistId)
+      const details = await getPlaylistDetails(playlistId, 2000)
       if (details) {
         setSelectedSaavnPlaylist(details)
       } else {

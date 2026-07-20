@@ -113,6 +113,16 @@ export const PlaylistProvider = ({ children }) => {
     return () => unsubscribeSnapshot();
   }, []);
 
+  // Update selectedPlaylist if its data changes in the background (e.g. another user updates cover image)
+  useEffect(() => {
+    if (selectedPlaylist) {
+      const updated = playlists.find(p => p.id === selectedPlaylist.id);
+      if (updated && (updated.img !== selectedPlaylist.img || updated.name !== selectedPlaylist.name || updated.songs?.length !== selectedPlaylist.songs?.length)) {
+        setSelectedPlaylist(updated);
+      }
+    }
+  }, [playlists]);
+
   // Re-run self-heal after auth is restored (fixes race condition: playlists load before auth ready)
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
