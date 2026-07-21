@@ -6,7 +6,7 @@ import {
   ChevronLeft, MoreVertical, MoreHorizontal, Volume1, Volume2, ChevronsLeft, ChevronsRight,
   Shuffle, Repeat, SlidersHorizontal, Lock, Equal, Cast, Share2
 } from 'lucide-react'
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react'
 import { createPortal } from 'react-dom'
 import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where, getDocs, arrayUnion } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
@@ -15,15 +15,15 @@ import Header from './components/Header'
 import HeroCard from './components/HeroCard'
 
 import SuggestedSongsList from './components/SuggestedSongsList'
-import MagicShuffle from './components/MagicShuffle'
+const MagicShuffle = lazy(() => import('./components/MagicShuffle'))
 import BottomNav from './components/BottomNav'
 import { searchSongs, searchPlaylists, getPlaylistDetails, getPlayableStreamForSong, getSongDetails } from './services/saavn'
 import { MediaSession } from '@jofr/capacitor-media-session';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { saveSongBlob, deleteSongBlob } from './services/idb';
-import AccountSettings from './components/AccountSettings'
-import DeviceConnectModal from './components/DeviceConnectModal'
+const AccountSettings = lazy(() => import('./components/AccountSettings'))
+const DeviceConnectModal = lazy(() => import('./components/DeviceConnectModal'))
 import { useDeviceConnect } from './contexts/DeviceConnectContext'
 import { useAuth } from './contexts/AuthContext'
 import { usePlayer } from './contexts/PlayerContext'
@@ -33,7 +33,7 @@ import { useAppContext } from './contexts/AppContext'
 import { usePlaylists } from './contexts/PlaylistContext';
 import AsyncArtistImage from './components/AsyncArtistImage';
 
-import DownloadContainer from './components/DownloadContainer'
+const DownloadContainer = lazy(() => import('./components/DownloadContainer'))
 import './App.css'
 
 const WidgetPlugin = registerPlugin('WidgetPlugin');
@@ -466,13 +466,10 @@ function App() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [newPlaylistImg, setNewPlaylistImg] = useState('')
-  const [newPlaylistLink, setNewPlaylistLink] = useState('')
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false)
   const [showEditCoverModal, setShowEditCoverModal] = useState(false)
   const [editCoverImg, setEditCoverImg] = useState('')
   const { isAccountSettingsOpen, setIsAccountSettingsOpen } = useAppContext()
-
-
 
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -1595,71 +1592,17 @@ function App() {
   const handleCreatePlaylist = async (e) => {
     e.preventDefault()
 
-    const link = newPlaylistLink.trim();
-    let finalName = newPlaylistName.trim();
-    let finalImg = newPlaylistImg.trim();
-    let finalSongs = [];
+    const finalName = newPlaylistName.trim();
+    const finalImg = newPlaylistImg.trim();
 
-    if (!finalName && !link) {
-      triggerToast('Please enter a playlist name or paste a link.');
+    if (!finalName) {
+      triggerToast('Please enter a playlist name.');
       return;
     }
 
     setIsCreatingPlaylist(true);
 
     try {
-      if (link) {
-        if (link.includes('spotify.com')) {
-          // Spotify oEmbed
-          try {
-            const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link)}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.title) finalName = finalName || data.title;
-              if (data.thumbnail_url) finalImg = finalImg || data.thumbnail_url;
-
-              if (data.title) {
-                const saavnMatches = await searchPlaylists(data.title, 1);
-                if (saavnMatches && saavnMatches.length > 0) {
-                  const plDetails = await getPlaylistDetails(saavnMatches[0].id);
-                  if (plDetails && plDetails.songs) {
-                    finalSongs = plDetails.songs;
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.error('Spotify import error:', err);
-          }
-        } else if (link.includes('jiosaavn.com')) {
-          try {
-            // extract the slug and token
-            const urlObj = new URL(link);
-            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-            const token = pathSegments[pathSegments.length - 1];
-            const nameSlug = pathSegments[pathSegments.length - 2];
-            if (nameSlug) {
-              const queryName = nameSlug.replace(/-/g, ' ');
-              const saavnMatches = await searchPlaylists(queryName, 20);
-              if (saavnMatches && saavnMatches.length > 0) {
-                // Try to find the exact match by token, otherwise fallback to first match
-                const exactMatch = saavnMatches.find(p => p.url && p.url.toLowerCase().includes(token.toLowerCase())) || saavnMatches[0];
-                const plDetails = await getPlaylistDetails(exactMatch.id);
-                if (plDetails) {
-                  finalName = finalName || plDetails.title;
-                  finalImg = finalImg || plDetails.img;
-                  if (plDetails.songs) finalSongs = plDetails.songs;
-                }
-              }
-            }
-          } catch (err) {
-            console.error('Saavn import error:', err);
-          }
-        }
-      }
-
-      if (!finalName) finalName = 'Untitled Playlist';
-
       const creator = currentUser?.displayName || (currentUser?.email ? currentUser.email.split('@')[0] : null) || localStorage.getItem('username') || 'Anonymous'
 
       const docRef = doc(collection(db, 'playlists'))
@@ -1669,7 +1612,7 @@ function App() {
         id: newId,
         name: finalName,
         img: finalImg || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop',
-        songs: finalSongs,
+        songs: [],
         creator: creator,
         uid: currentUser?.uid || localStorage.getItem('tv_uid') || null,
         createdAt: Date.now()
@@ -1686,9 +1629,8 @@ function App() {
 
       setNewPlaylistName('')
       setNewPlaylistImg('')
-      setNewPlaylistLink('')
       setShowCreateModal(false)
-      triggerToast(`Created playlist "${newPl.name}"${finalSongs.length ? ` with ${finalSongs.length} songs` : ''}!`)
+      triggerToast(`Created playlist "${newPl.name}"!`)
       setSelectedPlaylist(newPl)
       setActiveTab('create')
 
@@ -2679,7 +2621,7 @@ function App() {
                           >
                             <div style={{ position: 'relative' }}>
                               {playlistImg ? (
-                                <img src={playlistImg} alt={playlist.name} className="carousel-img" />
+                                <img src={playlistImg} alt={playlist.name} className="carousel-img" loading="lazy" />
                               ) : (
                                 <div className="carousel-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: grad }}>
                                   <ListMusic size={48} color="white" />
@@ -2699,12 +2641,14 @@ function App() {
                 </div>
               )}
 
-              <MagicShuffle onAction={(msg) => {
-                triggerToast(msg)
-                const _songs = window.defaultSongs || [];
-                const randomSong = _songs[Math.floor(Math.random() * _songs.length)];
-                if (randomSong) playSong(randomSong)
-              }} />
+              <Suspense fallback={null}>
+                <MagicShuffle onAction={(msg) => {
+                  triggerToast(msg)
+                  const _songs = window.defaultSongs || [];
+                  const randomSong = _songs[Math.floor(Math.random() * _songs.length)];
+                  if (randomSong) playSong(randomSong)
+                }} />
+              </Suspense>
             </>
           )
         )}
@@ -3017,7 +2961,7 @@ function App() {
                                   return (
                                     <div key={idx} onClick={() => setSearchQuery(artistName)} className="search-playlist-card focusable" style={{ flex: '0 0 100px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                                       <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--card-border, #333)' }}>
-                                        <img src={artistSong?.img} alt={artistName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={artistSong?.img} alt={artistName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
                                       </div>
                                       <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-color)', textAlign: 'center', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {artistName}
@@ -3047,7 +2991,7 @@ function App() {
                                   return (
                                     <div key={idx} onClick={() => setSearchQuery(albumName)} className="search-playlist-card focusable" style={{ flex: '0 0 130px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                       <div style={{ width: '130px', height: '130px', borderRadius: '12px', overflow: 'hidden' }}>
-                                        <img src={albumSong?.img} alt={albumName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={albumSong?.img} alt={albumName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
                                       </div>
                                       <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-color)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {albumName}
@@ -3075,7 +3019,7 @@ function App() {
                           onMouseEnter={() => prefetchSong(song)}
                           onFocus={() => prefetchSong(song)}
                         >
-                          <img src={song.img} alt={song.title} className="search-result-img" />
+                          <img src={song.img} alt={song.title} className="search-result-img" loading="lazy" />
                           <div className="search-result-info">
                             <div className="search-result-title">{song.title}</div>
                             <div className="search-result-artist">{song.artist}</div>
@@ -3463,7 +3407,7 @@ function App() {
                           const isAdded = (selectedPlaylist.songs || []).some(s => s.id === song.id || s.title === song.title)
                           return (
                             <div key={song.id} className="search-result-item focusable" tabIndex={0} style={{ display: 'flex', alignItems: 'center', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px', background: 'var(--card-bg)' }}>
-                              <img src={song.img} alt={song.title} className="search-result-img" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                              <img src={song.img} alt={song.title} className="search-result-img" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} loading="lazy" />
                               <div className="search-result-info" style={{ flex: 1, marginLeft: '10px', overflow: 'hidden' }}>
                                 <div className="search-result-title" style={{ fontSize: '14px', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.title}</div>
                                 <div className="search-result-artist" style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.artist}</div>
@@ -4623,27 +4567,6 @@ function App() {
           }}>
             <h3 style={{ color: 'var(--text-color)', fontSize: '18px', fontWeight: '600', marginBottom: '16px', margin: 0 }}>Create New Playlist</h3>
             <form onSubmit={handleCreatePlaylist}>
-              <div style={{ position: 'relative', margin: '16px 0 12px 0' }}>
-                <input
-                  type="text"
-                  placeholder="Paste Spotify or JioSaavn Playlist Link"
-                  value={newPlaylistLink}
-                  onChange={(e) => setNewPlaylistLink(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'var(--input-bg)',
-                    border: '1px solid var(--card-orange)',
-                    borderRadius: '8px',
-                    padding: '12px',
-                    color: 'var(--text-color)',
-                    outline: 'none',
-                    fontSize: '14px',
-                    boxShadow: '0 0 10px rgba(230, 92, 0, 0.1)'
-                  }}
-                  autoFocus
-                />
-              </div>
-              <div style={{ textAlign: 'center', color: 'var(--text-color)', margin: '8px 0', opacity: 0.6, fontSize: '12px', fontWeight: '500' }}>OR CREATE MANUALLY</div>
               <input
                 type="text"
                 placeholder="Playlist name"
@@ -4657,9 +4580,11 @@ function App() {
                   padding: '12px',
                   color: 'var(--text-color)',
                   marginBottom: '12px',
+                  marginTop: '16px',
                   outline: 'none',
                   fontSize: '14px'
                 }}
+                autoFocus
               />
               <input
                 type="text"
@@ -4726,10 +4651,14 @@ function App() {
       )}
 
       {/* Account Settings Container */}
-      {isAccountSettingsOpen && <AccountSettings onClose={() => setIsAccountSettingsOpen(false)} />}
+      <Suspense fallback={null}>
+        {isAccountSettingsOpen && <AccountSettings onClose={() => setIsAccountSettingsOpen(false)} />}
+      </Suspense>
 
       {/* Download Settings Container */}
-      {isDownloadOpen && <DownloadContainer onClose={() => setIsDownloadOpen(false)} downloadedSongs={downloadedSongs} playSong={playSong} />}
+      <Suspense fallback={null}>
+        {isDownloadOpen && <DownloadContainer onClose={() => setIsDownloadOpen(false)} downloadedSongs={downloadedSongs} playSong={playSong} />}
+      </Suspense>
 
       {/* Live Connect Modal */}
       {isLiveConnectOpen && (
@@ -4989,7 +4918,9 @@ function App() {
         </div>
       )}
 
-      <DeviceConnectModal />
+      <Suspense fallback={null}>
+        <DeviceConnectModal />
+      </Suspense>
 
       {/* Mini Player React Portal */}
       {pipWindow && createPortal(

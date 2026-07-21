@@ -39,7 +39,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    minify: false,
+    minify: 'terser',
     target: 'es2015', // Keeps the main production bundler compiled for compatibility
     cssTarget: 'chrome60',
     rollupOptions: {

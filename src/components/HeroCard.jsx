@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './HeroCard.css';
 import { Play } from 'lucide-react';
 
@@ -17,4 +17,4 @@ const HeroCard = ({ onAction }) => {
   );
 };
 
-export default HeroCard;
+export default memo(HeroCard);

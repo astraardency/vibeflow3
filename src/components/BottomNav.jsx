@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './BottomNav.css';
 import { Home, Search, ListMusic, BarChart2 } from 'lucide-react';
 
@@ -44,4 +44,4 @@ const BottomNav = ({ activeTab, setActiveTab }) => {
   );
 };
 
-export default BottomNav;
+export default memo(BottomNav);

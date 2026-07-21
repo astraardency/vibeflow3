@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './Carousel.css';
 import { Play, Pause } from 'lucide-react';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -37,6 +37,7 @@ const SuggestedSongsList = ({ songs = [], onSongPlay, currentTrack, isPlaying, h
                   src={getSongImage(song)} 
                   alt={song.title} 
                   className="carousel-img" 
+                  loading="lazy"
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop';
                   }}
@@ -63,4 +64,4 @@ const SuggestedSongsList = ({ songs = [], onSongPlay, currentTrack, isPlaying, h
   );
 };
 
-export default SuggestedSongsList;
+export default memo(SuggestedSongsList);

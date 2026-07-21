@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Lock, ArrowLeft, Search, ChevronRight, ExternalLink, HelpCircle, Monitor, Camera } from 'lucide-react';
 import { auth, googleProvider, db } from '../services/firebase';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -30,8 +30,6 @@ const AccountSettings = ({ onClose }) => {
   const [isCapacitor, setIsCapacitor] = useState(detectNative);
   // Re-check after mount so Capacitor bridge has time to initialize in release builds
   useEffect(() => { setIsCapacitor(detectNative()); }, []);
-  // Detect mobile web (not native app) - popups are blocked on mobile browsers
-  const isMobileWeb = !isCapacitor && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   // Settings Views
   const [currentView, setCurrentView] = useState('main'); // 'main', 'privacy', 'data_saving', 'media_quality', 'about', 'host_dashboard'
@@ -295,9 +293,6 @@ const AccountSettings = ({ onClose }) => {
         setIsLoggedIn(true);
         setUsername(user.displayName || user.email.split('@')[0]);
         setEmail(user.email);
-      } else if (isMobileWeb) {
-        // Mobile web: use redirect (popups are blocked or reload the tab on mobile browsers)
-        await signInWithRedirect(auth, googleProvider);
       } else {
         // Web: universally use popup to avoid mobile redirect loops
         const result = await signInWithPopup(auth, googleProvider);
