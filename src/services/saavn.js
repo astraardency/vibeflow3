@@ -1,5 +1,8 @@
 const API_ENDPOINTS = [
   import.meta.env.VITE_SAAVN_LOCAL_API || 'http://192.168.137.1:5000/api',
+  'https://saavn.dev/api',
+  'https://jiosaavn-api-privatecvc2.vercel.app/api',
+  'https://saavn.me/api',
   'https://saavn.sumit.co/api',
 ];
 
