@@ -446,7 +446,8 @@ const AccountSettings = ({ onClose }) => {
 
   const handleHostDashboardLogin = () => {
     const pin = window.prompt("Enter Host PIN to access dashboard:");
-    if (pin === "342832") {
+    if (pin === import.meta.env.VITE_HOST_PIN) {
+      setIsHost(true);
       setCurrentView('host_dashboard');
       fetchHostPlaylists();
     } else if (pin !== null) {
