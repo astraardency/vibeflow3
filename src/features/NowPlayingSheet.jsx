@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronDown, MoreVertical, Heart, SkipBack, Play, Pause, SkipForward, Download, Radio, Headphones, Volume1, Volume2, SlidersHorizontal, X } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
-import { NativeAudio } from '@capacitor-community/native-audio';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+const NativeAudio = registerPlugin('NativeAudio');
 
 export default function NowPlayingSheet({
   isNowPlayingOpen,

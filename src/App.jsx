@@ -56,12 +56,7 @@ import './App.css'
 const WidgetPlugin = registerPlugin('WidgetPlugin');
 const NativeAudio = registerPlugin('NativeAudio');
 
-// Safe cross-device sync: adds a playlist ID to user doc without overwriting other saved IDs
-const arrayUnionUpdateUserDoc = (uid, playlistId) => {
-  if (!uid || !playlistId) return;
-  updateDoc(doc(db, 'users', uid), { savedPlaylistIds: arrayUnion(playlistId) })
-    .catch(e => console.warn('Could not sync savedPlaylistIds to user doc:', e));
-};
+
 
 function App() {
   const [showSplash, setShowSplash] = useState(true)
@@ -2635,7 +2630,8 @@ function App() {
               ))}
             </div>
           </>
-                <div style={{ textAlign: 'center', padding: '40px 10px', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 10px', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
             No track playing. Select a song to start listening.
           </div>
         )}
