@@ -1,0 +1,18 @@
+[
+	{
+		"pkg": "@capacitor/filesystem",
+		"classpath": "com.capacitorjs.plugins.filesystem.FilesystemPlugin"
+	},
+	{
+		"pkg": "@capacitor-mlkit/barcode-scanning",
+		"classpath": "io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.BarcodeScannerPlugin"
+	},
+	{
+		"pkg": "@codetrix-studio/capacitor-google-auth",
+		"classpath": "com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth"
+	},
+	{
+		"pkg": "@jofr/capacitor-media-session",
+		"classpath": "io.github.jofr.capacitor.mediasessionplugin.MediaSessionPlugin"
+	}
+]

@@ -97,7 +97,7 @@ const AccountSettings = ({ onClose }) => {
 
   const handleRemoveDownloads = () => {
     localStorage.removeItem('downloadedSongs');
-    alert("Remove all the Spotify content you've downloaded. Downloads removed!");
+    alert("Remove all the songs content you've downloaded. Downloads removed!");
   };
 
   const handleUpdateDownloads = () => {
@@ -334,7 +334,7 @@ const AccountSettings = ({ onClose }) => {
             {isCapacitor ? "Welcome to Vibeflow" : "Vibeflow TV"}
           </h2>
           <p className="auth-subtitle">
-            {isCapacitor 
+            {isCapacitor
               ? "Your ultimate music experience awaits."
               : "Use your mobile app to scan the QR code and log in"}
           </p>
@@ -372,7 +372,7 @@ const AccountSettings = ({ onClose }) => {
             </span>
             <span className="btn-text">Continue with Google</span>
           </button>
-          
+
           <p className="auth-terms">
             By continuing, you agree to our <span onClick={() => setCurrentView('terms_of_use')}>Terms of Service</span> and <span onClick={() => setCurrentView('privacy_policy')}>Privacy Policy</span>.
           </p>
@@ -564,7 +564,7 @@ const AccountSettings = ({ onClose }) => {
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>d</div>} title="Content and display" subtitle="Canvas • Languages for music" onClick={() => { }} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🔊</div>} title="Playback" subtitle="Gapless playback • Autoplay" onClick={() => { }} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🔔</div>} title="Notifications" subtitle="Push • Email" onClick={() => { }} />
-      <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📺</div>} title="Devices" subtitle={isCapacitor ? "Scan QR code to link Vibeflow TV" : "Bluetooth • Spotify Connect"} onClick={handleDevicesClick} />
+      <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📺</div>} title="Devices" subtitle={isCapacitor ? "Scan QR code to link Vibeflow TV" : "Bluetooth • Vibeflow Connect"} onClick={handleDevicesClick} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>↓</div>} title="Data-saving and offline" subtitle="Data Saver mode • Downloads over cellular" onClick={() => setCurrentView('data_saving')} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📶</div>} title="Media quality" subtitle="Wi-Fi streaming quality • Audio download quality" onClick={() => setCurrentView('media_quality')} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>ℹ️</div>} title="About and support" subtitle="Version • Privacy Policy" onClick={() => setCurrentView('about')} />
@@ -613,7 +613,7 @@ const AccountSettings = ({ onClose }) => {
       />
       <div className="info-text">
         <HelpCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
-        Video is never streamed when the Spotify app is running in the background.
+        Video is never streamed when the vibeflow app is running in the background.
       </div>
 
       <div className="settings-divider"></div>
@@ -624,7 +624,7 @@ const AccountSettings = ({ onClose }) => {
       <div className="settings-action-item">
         <div className="action-item-text">
           <span className="action-title">Remove all downloads</span>
-          <span className="action-subtitle">Remove all the Spotify content you've downloaded to free up space.</span>
+          <span className="action-subtitle">Remove all the vibeflow content you've downloaded to free up space.</span>
         </div>
         <button className="action-btn" onClick={handleRemoveDownloads}>Remove</button>
       </div>
