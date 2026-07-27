@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Lock, ArrowLeft, Search, ChevronRight, ExternalLink, HelpCircle, Monitor, Camera } from 'lucide-react';
 import { auth, googleProvider, db } from '../services/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -446,46 +446,33 @@ const AccountSettings = ({ onClose }) => {
   };
 
   const handleHostDashboardLogin = async () => {
+    const pin = window.prompt("Enter Host PIN to access dashboard:");
+    if (!pin) return;
+    
     try {
-      const encryptedPhone = import.meta.env.VITE_HOST_PHONE_ENC;
-      if (!encryptedPhone) {
-        alert("Host phone number is not configured in .env.");
+      const encoder = new TextEncoder();
+      const data = encoder.encode(pin);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      const storedHash = import.meta.env.VITE_HOST_PIN_HASH;
+      
+      if (!storedHash) {
+        alert("Host PIN is not securely configured in .env");
         return;
       }
       
-      const phoneNumber = atob(encryptedPhone);
-
-      // Remove any existing container to guarantee a fresh state
-      let container = document.getElementById('recaptcha-container');
-      if (container) container.remove();
-      
-      // Create a fresh container
-      container = document.createElement('div');
-      container.id = 'recaptcha-container';
-      document.body.appendChild(container);
-
-      // Create a fresh verifier
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible'
-      });
-
-      // Removed blocking alert() which can interfere with invisible recaptcha initialization
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-      
-      const otp = window.prompt("OTP Sent! Enter the 6-digit OTP sent to your phone:");
-      if (!otp) {
-        return;
+      if (hashHex === storedHash) {
+        setIsHost(true);
+        setCurrentView('host_dashboard');
+        fetchHostPlaylists();
+      } else {
+        alert("Invalid PIN.");
       }
-      
-      await confirmationResult.confirm(otp);
-      
-      setIsHost(true);
-      setCurrentView('host_dashboard');
-      fetchHostPlaylists();
-      
     } catch (e) {
-      console.error(e);
-      alert("Error verifying OTP: " + e.message + "\n\n(Did you enable Phone Auth in Firebase Console?)");
+      console.error("Error verifying PIN:", e);
+      alert("Error verifying PIN.");
     }
   };
 
