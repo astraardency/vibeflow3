@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Search, Heart, ListMusic, Headphones, Sparkles, Play, Plus, Check, Share2 } from 'lucide-react';
+import { ArrowLeft, Search, Heart, ListMusic, Headphones, Sparkles, Play, Plus, Check, Share2, X, Trash2 } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
@@ -242,9 +242,10 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                       e.stopPropagation()
                       toggleLike(song.title, e, triggerToast)
                     }}
-                    style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}
+                    style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Unlike"
                   >
-                    Unlike
+                    <Trash2 size={18} />
                   </button>
                 </div>
               ))
@@ -386,7 +387,9 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
                     </div>
                   </div>
                   {isCreator && (
-                    <button className="remove-song-btn focusable" tabIndex={0} onClick={(e) => { e.stopPropagation(); removeSongFromPlaylist(selectedPlaylist.id, song.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', fontSize: '12px' }}>Remove</button>
+                    <button className="remove-song-btn focusable" tabIndex={0} onClick={(e) => { e.stopPropagation(); removeSongFromPlaylist(selectedPlaylist.id, song.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove">
+                      <Trash2 size={18} />
+                    </button>
                   )}
                 </div>
               ))

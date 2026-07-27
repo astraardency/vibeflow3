@@ -74,7 +74,7 @@ const AccountSettings = ({ onClose }) => {
   useEffect(() => {
     if (isCapacitor) {
       GoogleAuth.initialize({
-        clientId: '211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com',
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });

@@ -307,7 +307,7 @@ export const PlayerProvider = ({ children }) => {
         }
       }
 
-      if (!trackToPlay.audioUrl || trackToPlay.audioUrl.includes('audio_url_') || trackToPlay.audioUrl.includes('placeholder_url') || (trackToPlay.audioUrl.includes('saavncdn.com') && (!song.fetchedAt || Date.now() - song.fetchedAt > 12 * 60 * 60 * 1000))) {
+      if (!trackToPlay.audioUrl || trackToPlay.audioUrl.includes('audio_url_') || trackToPlay.audioUrl.includes('placeholder_url')) {
         let playableResult = await getPlayableStreamForSong(song);
         if (playableResult) {
           trackToPlay = {

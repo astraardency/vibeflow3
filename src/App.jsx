@@ -299,62 +299,83 @@ function App() {
 
   const lastCountedTrackIdRef = useRef(null);
 
+  const trackSongPlay = useCallback((trackToTrack) => {
+    if (!trackToTrack) return;
+    const trackIdentifier = trackToTrack.id || trackToTrack.title;
+    if (lastCountedTrackIdRef.current === trackIdentifier) return;
+    
+    lastCountedTrackIdRef.current = trackIdentifier;
+
+    setPlaysCount(prev => {
+      const newCount = (prev || 0) + 1;
+      localStorage.setItem('plays_count', newCount.toString());
+      return newCount;
+    });
+
+    setDailyPlays(prev => {
+      const newDaily = [...(prev || [0, 0, 0, 0, 0, 0, 0])];
+      const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
+      newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
+      return newDaily;
+    });
+
+    setArtistPlays(prev => {
+      const newCounts = { ...(prev || {}) };
+      if (trackToTrack.artist) {
+        const artists = trackToTrack.artist.split(',').map(a => a.trim());
+        artists.forEach(a => {
+          newCounts[a] = (newCounts[a] || 0) + 1;
+        });
+      }
+      localStorage.setItem('artist_plays', JSON.stringify(newCounts));
+      return newCounts;
+    });
+
+    setListeningActivity(prev => {
+      const filtered = (prev || []).filter(s => s.title !== trackToTrack.title);
+      const updated = [trackToTrack, ...filtered].slice(0, 15);
+      localStorage.setItem('listening_activity', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (currentUser && !currentUser.isAnonymous) {
+      try {
+        addDoc(collection(db, 'listening_history'), {
+          userId: currentUser.uid,
+          username: currentUser.displayName || currentUser.email || 'Unknown',
+          songId: trackToTrack.id || '',
+          songTitle: trackToTrack.title || '',
+          artist: trackToTrack.artist || '',
+          timestamp: new Date().toISOString()
+        }).catch(e => console.warn('Could not save to listening_history:', e));
+      } catch (e) {
+        console.error("Error saving listening history:", e);
+      }
+    }
+  }, [currentUser, setPlaysCount, setDailyPlays, setArtistPlays, setListeningActivity]);
+
   // Track plays when a new song starts
   useEffect(() => {
     if (currentTrack && isPlaying && isLocalDeviceActive) {
-      const trackIdentifier = currentTrack.id || currentTrack.title;
-      if (lastCountedTrackIdRef.current !== trackIdentifier) {
-        lastCountedTrackIdRef.current = trackIdentifier;
-
-        setPlaysCount(prev => {
-          const newCount = prev + 1;
-          localStorage.setItem('plays_count', newCount.toString());
-          return newCount;
-        });
-
-        setDailyPlays(prev => {
-          const newDaily = [...prev];
-          const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
-          newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
-          return newDaily;
-        });
-
-        setArtistPlays(prev => {
-          const newCounts = { ...prev };
-          if (currentTrack.artist) {
-            const artists = currentTrack.artist.split(',').map(a => a.trim());
-            artists.forEach(a => {
-              newCounts[a] = (newCounts[a] || 0) + 1;
-            });
-          }
-          localStorage.setItem('artist_plays', JSON.stringify(newCounts));
-          return newCounts;
-        });
-
-        setListeningActivity(prev => {
-          const filtered = prev.filter(s => s.title !== currentTrack.title);
-          const updated = [currentTrack, ...filtered].slice(0, 15);
-          localStorage.setItem('listening_activity', JSON.stringify(updated));
-          return updated;
-        });
-
-        if (currentUser && !currentUser.isAnonymous) {
-          try {
-            addDoc(collection(db, 'listening_history'), {
-              userId: currentUser.uid,
-              username: currentUser.displayName || currentUser.email || 'Unknown',
-              songId: currentTrack.id || '',
-              songTitle: currentTrack.title || '',
-              artist: currentTrack.artist || '',
-              timestamp: new Date().toISOString()
-            }).catch(e => console.warn('Could not save to listening_history:', e));
-          } catch (e) {
-            console.error("Error saving listening history:", e);
-          }
-        }
-      }
+      trackSongPlay(currentTrack);
     }
-  }, [currentTrack, isPlaying, isLocalDeviceActive, currentUser]);
+  }, [currentTrack, isPlaying, isLocalDeviceActive, trackSongPlay]);
+
+  const queueRef = useRef(activePlaybackQueue);
+  useEffect(() => {
+    queueRef.current = activePlaybackQueue;
+  }, [activePlaybackQueue]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const sub = NativeAudio.addListener('onTrackChanged', (data) => {
+      const queue = queueRef.current;
+      if (queue && queue[data.index]) {
+         trackSongPlay(queue[data.index]);
+      }
+    });
+    return () => { sub.then(s => s.remove()); };
+  }, [trackSongPlay]);
 
   // Diagnostic utility for the user to cross check broken songs
   useEffect(() => {
@@ -472,26 +493,22 @@ function App() {
     }
   }, [])
 
+  const { isAccountSettingsOpen, setIsAccountSettingsOpen } = useAppContext()
+
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isDownloadOpen, setIsDownloadOpen] = useState(!navigator.onLine)
+
   useEffect(() => {
+    if (isOffline) {
+      setIsAccountSettingsOpen(false);
+      return;
+    }
     if (currentUser && !currentUser.isAnonymous) {
       setIsAccountSettingsOpen(false);
     } else if (!currentUser) {
       setIsAccountSettingsOpen(true);
     }
-  }, [currentUser]);
-  const [selectedPlaylist, setSelectedPlaylist] = useState(null)
-  const [playlistSearchQuery, setPlaylistSearchQuery] = useState('')
-  const [playlistSearchResults, setPlaylistSearchResults] = useState([])
-  const [isSearchingPlaylistSongs, setIsSearchingPlaylistSongs] = useState(false)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [newPlaylistName, setNewPlaylistName] = useState('')
-  const [newPlaylistImg, setNewPlaylistImg] = useState('')
-  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false)
-  const [showEditCoverModal, setShowEditCoverModal] = useState(false)
-  const [editCoverImg, setEditCoverImg] = useState('')
-  const { isAccountSettingsOpen, setIsAccountSettingsOpen } = useAppContext()
-
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  }, [currentUser, isOffline]);
 
   useEffect(() => {
     const handleOffline = () => {
@@ -518,9 +535,16 @@ function App() {
     };
   }, []);
 
-
-
-  const [isDownloadOpen, setIsDownloadOpen] = useState(!navigator.onLine)
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null)
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState('')
+  const [playlistSearchResults, setPlaylistSearchResults] = useState([])
+  const [isSearchingPlaylistSongs, setIsSearchingPlaylistSongs] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [newPlaylistImg, setNewPlaylistImg] = useState('')
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false)
+  const [showEditCoverModal, setShowEditCoverModal] = useState(false)
+  const [editCoverImg, setEditCoverImg] = useState('')
 
   const [isLikedSongsOpen, setIsLikedSongsOpen] = useState(false)
 
@@ -1572,11 +1596,12 @@ function App() {
     // If the stream is a JioSaavn URL and failed to load (e.g. 403 Expired), try refreshing it!
     if (track.audioUrl && track.audioUrl.includes('saavncdn.com') && !track._isRefreshed) {
       triggerToast("Refreshing expired stream...");
-      // Fetch fresh details using ID (or search if ID is dummy)
       let playableResult;
-      if (track.id && typeof track.id === 'string' && track.id.length > 5) {
+      const isRealSaavnId = track.id && typeof track.id === 'string' && track.id.length > 5 && !track.id.startsWith('song_') && !track.id.includes('dummy');
+      if (isRealSaavnId) {
         playableResult = await getSongDetails(track.id);
-      } else {
+      }
+      if (!playableResult) {
         playableResult = await getPlayableStreamForSong(track);
       }
 
@@ -2360,6 +2385,7 @@ function App() {
         onError={onAudioError}
         playsInline
         preload="auto"
+        referrerPolicy="no-referrer"
       />
 
       {/* Global Toast Notification */}
@@ -2472,6 +2498,7 @@ function App() {
               savedPlaylistIds={savedPlaylistIds}
               setSelectedPlaylist={setSelectedPlaylist}
               setActiveTab={setActiveTab}
+              setIsLikedSongsOpen={setIsLikedSongsOpen}
               currentTrack={currentTrack}
               isPlaying={isPlaying}
               getSuggestedSongs={getSuggestedSongs}

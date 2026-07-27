@@ -1,10 +1,11 @@
 const API_ENDPOINTS = [
-  import.meta.env.VITE_SAAVN_LOCAL_API || 'http://192.168.137.1:5000/api',
+  import.meta.env.VITE_SAAVN_LOCAL_API,
   'https://saavn.dev/api',
+  'https://jiosaavn-api-v3.vercel.app/api',
   'https://jiosaavn-api-privatecvc2.vercel.app/api',
   'https://saavn.me/api',
   'https://saavn.sumit.co/api',
-];
+].filter(Boolean);
 
 const songCache = new Map();
 const searchCache = new Map();
@@ -13,25 +14,36 @@ const searchCache = new Map();
  * Makes a fetch request with retry logic and endpoint fallback
  */
 const fetchWithRetry = async (path, maxRetries = 1) => {
-  for (let endpointIdx = 0; endpointIdx < API_ENDPOINTS.length; endpointIdx++) {
-    const base = API_ENDPOINTS[endpointIdx];
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const response = await fetch(`${base}${path}`, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.success !== false) return data;
-        } else {
-          throw new Error(`HTTP Error ${response.status}`);
-        }
-      } catch (err) {
-        if (attempt === maxRetries && endpointIdx === API_ENDPOINTS.length - 1) throw err;
-        // Exponential backoff: 200ms, 400ms
-        await new Promise(r => setTimeout(r, 200 * Math.pow(2, attempt)));
-      }
+  let lastErr = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const promises = API_ENDPOINTS.map(base => {
+        return new Promise(async (resolve, reject) => {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 4000);
+            const response = await fetch(`${base}${path}`, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (response.ok) {
+              const data = await response.json();
+              const isValid = data && (Array.isArray(data) || data.data !== undefined || data.results !== undefined || data.songs !== undefined || data.success === true);
+              if (isValid && data.success !== false) {
+                resolve(data);
+              } else {
+                reject(new Error('Invalid data'));
+              }
+            } else {
+              reject(new Error(`HTTP Error ${response.status}`));
+            }
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+      return await Promise.any(promises);
+    } catch (err) {
+      lastErr = err;
+      await new Promise(r => setTimeout(r, 200 * Math.pow(2, attempt)));
     }
   }
   return null;
@@ -87,8 +99,10 @@ export const searchSongs = async (query, limit = 40) => {
   try {
     const data = await fetchWithRetry(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
 
-    if (data && data.data && data.data.results) {
-      let songs = data.data.results.map(formatSongData).filter(Boolean);
+    const rawResults = data?.data?.results || data?.results || (Array.isArray(data?.data) ? data.data : null);
+
+    if (rawResults && Array.isArray(rawResults)) {
+      let songs = rawResults.map(formatSongData).filter(s => s && s.audioUrl);
 
       const targetLangs = ['english', 'korean', 'japanese'];
       songs.sort((a, b) => {
@@ -254,9 +268,8 @@ export const getPlayableStreamForSong = async (song) => {
     const isInvalidTrack = (r) => {
       const rTitle = (r.title || '').toLowerCase();
       const rAlbum = (r.album || '').toLowerCase();
-      const isWrongLanguage = isFromLocalPlaylist && r.language && r.language !== 'tamil' && r.language !== 'unknown';
       const isNonOriginal = rTitle.includes('lofi') || rTitle.includes('lo-fi') || rTitle.includes('remix') || rTitle.includes('cover') || rTitle.includes('karaoke') || rTitle.includes('instrumental') || rTitle.includes('bgm') || rTitle.includes('mashup') || rAlbum.includes('shivaratri') || rAlbum.includes('devotional') || rAlbum.includes('bhakti');
-      return isWrongLanguage || isNonOriginal;
+      return isNonOriginal;
     };
 
     // First pass: match both album/movie AND exact title AND artist
@@ -422,8 +435,10 @@ export const getSongDetails = async (id) => {
   try {
     const data = await fetchWithRetry(`/songs/${id}`);
 
-    if (data && data.data && data.data[0]) {
-      const result = formatSongData(data.data[0]);
+    const rawSong = data?.data?.[0] || (Array.isArray(data?.data) ? data.data[0] : data?.data) || data?.results?.[0];
+
+    if (rawSong) {
+      const result = formatSongData(rawSong);
       if (result && result.audioUrl) {
         songCache.set(cacheKey, result);
         // Expire cache after 30 minutes in-memory
@@ -468,23 +483,29 @@ const formatSongData = (song) => {
   }
 
   // Extract best quality download URL (prefer 320kbps, fall back to 160kbps, then others)
+  let rawUrlData = song.downloadUrl || song.download_url || song.media_url || song.url || song.media_preview_url || song.stream_url;
   let audioUrl = '';
-  if (song.downloadUrl) {
-    if (Array.isArray(song.downloadUrl) && song.downloadUrl.length > 0) {
-      const isStringArray = typeof song.downloadUrl[0] === 'string';
+
+  if (rawUrlData) {
+    if (Array.isArray(rawUrlData) && rawUrlData.length > 0) {
+      const isStringArray = typeof rawUrlData[0] === 'string';
       if (isStringArray) {
-        audioUrl = song.downloadUrl[song.downloadUrl.length - 1];
+        audioUrl = rawUrlData[rawUrlData.length - 1];
       } else {
-        const best = song.downloadUrl.find(d => d?.quality === '320kbps')
-          || song.downloadUrl.find(d => d?.quality === '160kbps')
-          || song.downloadUrl.find(d => d?.quality === '96kbps')
-          || song.downloadUrl.find(d => d?.quality === '48kbps')
-          || song.downloadUrl[song.downloadUrl.length - 1];
+        const best = rawUrlData.find(d => d?.quality === '320kbps')
+          || rawUrlData.find(d => d?.quality === '160kbps')
+          || rawUrlData.find(d => d?.quality === '96kbps')
+          || rawUrlData.find(d => d?.quality === '48kbps')
+          || rawUrlData[rawUrlData.length - 1];
         audioUrl = best ? (best.url || best.link || '') : '';
       }
-    } else if (typeof song.downloadUrl === 'string') {
-      audioUrl = song.downloadUrl;
+    } else if (typeof rawUrlData === 'string') {
+      audioUrl = rawUrlData;
     }
+  }
+
+  if (audioUrl && audioUrl.startsWith('http://')) {
+    audioUrl = audioUrl.replace('http://', 'https://');
   }
 
   // Extract artists

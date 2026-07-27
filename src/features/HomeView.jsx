@@ -11,6 +11,7 @@ export default function HomeView({
   savedPlaylistIds,
   setSelectedPlaylist,
   setActiveTab,
+  setIsLikedSongsOpen,
   currentTrack,
   isPlaying,
   getSuggestedSongs,
@@ -93,7 +94,15 @@ export default function HomeView({
                     tabIndex={0}
                     onClick={() => {
                       setSelectedPlaylist(playlist);
+                      if (setIsLikedSongsOpen) setIsLikedSongsOpen(false);
                       setActiveTab('create');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setSelectedPlaylist(playlist);
+                        if (setIsLikedSongsOpen) setIsLikedSongsOpen(false);
+                        setActiveTab('create');
+                      }
                     }}
                     style={{ boxShadow: 'none', cursor: 'pointer' }}
                   >

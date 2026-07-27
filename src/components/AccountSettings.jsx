@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Lock, ArrowLeft, Search, ChevronRight, ExternalLink, HelpCircle, Monitor, Camera } from 'lucide-react';
 import { auth, googleProvider, db } from '../services/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously } from 'firebase/auth';
+import { signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithCredential, signInAnonymously, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -34,6 +34,7 @@ const AccountSettings = ({ onClose }) => {
   // Settings Views
   const [currentView, setCurrentView] = useState('main'); // 'main', 'privacy', 'data_saving', 'media_quality', 'about', 'host_dashboard'
   const [hostPlaylists, setHostPlaylists] = useState([]);
+  const [isHost, setIsHost] = useState(false);
 
   // Settings States
   const [followersFollowing, setFollowersFollowing] = useState(() => localStorage.getItem('pref_followers') !== 'false');
@@ -113,7 +114,7 @@ const AccountSettings = ({ onClose }) => {
   useEffect(() => {
     if (isCapacitor) {
       GoogleAuth.initialize({
-        clientId: '211660575500-b42uipe7fbma6fgtasitb7pqvl115s0q.apps.googleusercontent.com',
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });
@@ -444,14 +445,47 @@ const AccountSettings = ({ onClose }) => {
     }
   };
 
-  const handleHostDashboardLogin = () => {
-    const pin = window.prompt("Enter Host PIN to access dashboard:");
-    if (pin === import.meta.env.VITE_HOST_PIN) {
+  const handleHostDashboardLogin = async () => {
+    try {
+      const encryptedPhone = import.meta.env.VITE_HOST_PHONE_ENC;
+      if (!encryptedPhone) {
+        alert("Host phone number is not configured in .env.");
+        return;
+      }
+      
+      const phoneNumber = atob(encryptedPhone);
+
+      // Remove any existing container to guarantee a fresh state
+      let container = document.getElementById('recaptcha-container');
+      if (container) container.remove();
+      
+      // Create a fresh container
+      container = document.createElement('div');
+      container.id = 'recaptcha-container';
+      document.body.appendChild(container);
+
+      // Create a fresh verifier
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
+
+      // Removed blocking alert() which can interfere with invisible recaptcha initialization
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+      
+      const otp = window.prompt("OTP Sent! Enter the 6-digit OTP sent to your phone:");
+      if (!otp) {
+        return;
+      }
+      
+      await confirmationResult.confirm(otp);
+      
       setIsHost(true);
       setCurrentView('host_dashboard');
       fetchHostPlaylists();
-    } else if (pin !== null) {
-      alert("Invalid PIN.");
+      
+    } catch (e) {
+      console.error(e);
+      alert("Error verifying OTP: " + e.message + "\n\n(Did you enable Phone Auth in Firebase Console?)");
     }
   };
 

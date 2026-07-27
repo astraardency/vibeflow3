@@ -239,15 +239,22 @@ html {
 
 .np-album-art-shadow {
   position: absolute;
-  top: 15px;
+  top: 20px;
   height: 100%;
   max-height: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 16px;
   object-fit: cover;
-  filter: blur(25px);
-  opacity: 0.7;
+  filter: blur(35px) saturate(150%);
+  opacity: 0.8;
   z-index: 0;
+  animation: pulse-glow-heavy 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow-heavy {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(1.05); opacity: 0.9; }
+}
   transform: scale(0.95);
 }
 
@@ -754,51 +761,79 @@ html {
 .search-input-wrapper {
   position: relative;
   width: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--input-bg);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border: 1px solid var(--input-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.search-input-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 20px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.01));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
 .search-input-wrapper:focus-within {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08), 0 0 0 2px var(--card-orange);
-  transform: translateY(-2px);
-  border-color: transparent;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 0 20px rgba(245, 149, 74, 0.15);
+  transform: translateY(-3px) scale(1.02);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-input-wrapper:focus-within::before {
+  opacity: 1;
+  background: linear-gradient(135deg, var(--card-orange), rgba(255,100,100,0.5));
 }
 
 .search-box-icon {
   position: absolute;
-  left: 20px;
+  left: 22px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
-  transition: color 0.3s ease;
+  color: rgba(255,255,255,0.4);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 2;
 }
 
 .search-input-wrapper:focus-within .search-box-icon {
   color: var(--card-orange);
+  transform: translateY(-50%) scale(1.1) rotate(-5deg);
 }
 
 .search-input-redesign {
   width: 100%;
-  padding: 16px 20px 16px 52px;
-  border-radius: var(--radius-pill);
+  padding: 18px 24px 18px 60px;
+  border-radius: 20px;
   border: none;
   font-family: var(--font-family);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   background-color: transparent;
   color: var(--text-color);
   outline: none;
   position: relative;
   z-index: 1;
+  transition: color 0.3s ease;
 }
 
 .search-input-redesign::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.3);
+  transition: opacity 0.3s ease;
+}
+
+.search-input-redesign:focus::placeholder {
+  opacity: 0.5;
 }
 
 .search-placeholder-center {
@@ -854,19 +889,27 @@ html {
   background-color: var(--card-bg);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
   border: 1px solid var(--border-color);
   margin-bottom: var(--spacing-xs);
 }
 
 .search-result-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.15);
+  z-index: 2;
+  position: relative;
+}
+
+.search-result-item:active {
+  transform: scale(0.98);
+  transition: transform 0.1s;
 }
 
 .search-result-item.active-track {
   border-color: var(--card-orange);
-  background-color: rgba(245, 149, 74, 0.02);
+  background-color: rgba(245, 149, 74, 0.05);
 }
 
 .search-result-img {
@@ -875,6 +918,11 @@ html {
   border-radius: var(--radius-sm);
   object-fit: cover;
   margin-right: 14px;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.search-result-item:hover .search-result-img {
+  transform: scale(1.05);
 }
 
 .search-result-info {
@@ -910,12 +958,13 @@ html {
   justify-content: center;
   color: var(--text-color);
   margin-left: 12px;
-  transition: all 0.2s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .search-result-item:hover .search-play-icon {
   background-color: var(--card-orange);
   color: white;
+  transform: scale(1.1);
 }
 
 
@@ -961,16 +1010,18 @@ html {
   gap: var(--spacing-sm);
   cursor: pointer;
   margin-bottom: var(--spacing-lg);
-  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
 .create-playlist-btn:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
 }
 
 .create-playlist-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
+  transition: transform 0.1s;
 }
 
 .collection-title {
@@ -2861,4 +2912,11 @@ html {
   width: 1px;
   height: 36px;
   background-color: var(--border-color);
+}
+
+.playlist-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--bg-color, #121212);
 }
