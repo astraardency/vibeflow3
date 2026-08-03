@@ -20,20 +20,24 @@ export default function SaavnPlaylistView({
 }) {
   return (
     <div className="playlist-container">
-      <div className="playlist-header">
-        <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => setSelectedSaavnPlaylist(null)}>
+
+      <div className="playlist-header" style={{ justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => setSelectedSaavnPlaylist(null)} style={{ zIndex: 2 }}>
           <ArrowLeft size={22} />
         </button>
-        <h3 className="playlist-header-title">Playlist</h3>
+        <h3 className="playlist-header-title" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '50%', zIndex: 1 }}>Playlist</h3>
+        <div style={{ width: '40px' }} />
       </div>
+
+
 
       <div className="playlist-banner" style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: '24px',
         alignItems: 'flex-end',
-        padding: '20px 0',
-        margin: '20px 0',
+        padding: '20px',
+        margin: '0'
       }}>
         {selectedSaavnPlaylist.img && (
           <img
@@ -88,7 +92,6 @@ export default function SaavnPlaylistView({
                     setSavedPlaylistIds(newSaved);
                     localStorage.setItem('savedPlaylistIds', JSON.stringify(newSaved));
 
-                    // Sync to Firestore user doc using arrayUnion — safe for cross-device sync
                     if (currentUser?.uid) {
                       arrayUnionUpdateUserDoc(currentUser.uid, targetId);
                     }
@@ -145,12 +148,12 @@ export default function SaavnPlaylistView({
         </div>
       </div>
 
-      <div className="playlist-tracklist-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px', padding: '10px 15px' }}>
+      <div className="playlist-tracklist-header" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', borderBottom: '1px solid var(--border-color)', marginBottom: '10px', padding: '10px 20px' }}>
         <span># TITLE & ARTIST</span>
         <span>ALBUM</span>
       </div>
 
-      <div className="playlist-songs-list hide-scrollbar">
+      <div className="playlist-songs-list" style={{ padding: '0 20px' }}>
         {selectedSaavnPlaylist.songs.length === 0 ? (
           <div className="no-songs-placeholder" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
             No songs available in this playlist.
@@ -164,6 +167,7 @@ export default function SaavnPlaylistView({
                 className={`playlist-song-item focusable ${isActive ? 'active-track' : ''}`}
                 tabIndex={0}
                 onClick={() => playSong(song, idx, selectedSaavnPlaylist.songs, { triggerToast })}
+                style={{ display: 'flex', alignItems: 'center', padding: '8px 0', cursor: 'pointer' }}
               >
                 <div className="playlist-song-img-container" style={{ position: 'relative', marginRight: '15px' }}>
                   <img
@@ -178,11 +182,13 @@ export default function SaavnPlaylistView({
                     </div>
                   )}
                 </div>
-                <div className="playlist-song-info">
-                  <div className="playlist-song-title">{song.title}</div>
-                  <div className="playlist-song-artist">{song.artist}</div>
+                <div className="playlist-song-info" style={{ flex: 1, overflow: 'hidden' }}>
+                  <div className="playlist-song-title" style={{ fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.title}</div>
+                  <div className="playlist-song-artist" style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{song.artist}</div>
                 </div>
-                <div className="playlist-song-album">{song.album || 'Single'}</div>
+                <div className="playlist-song-album" style={{ width: '30%', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {song.album || 'Single'}
+                </div>
               </div>
             );
           })

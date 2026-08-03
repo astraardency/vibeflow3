@@ -4,7 +4,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { usePlaylists } from '../contexts/PlaylistContext';
-import { searchSongs, getPlaylistDetails } from '../services/saavn';
+import { searchSongs, getPlaylistDetails } from '../services/musicService';
 import { getSongImage } from '../utils/playerUtils';
 import { db } from '../services/firebase';
 import { doc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';

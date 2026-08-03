@@ -106,7 +106,6 @@ export default function MiniPlayer({
           onMouseDown={handleMiniPlayerTouchStart}
           onMouseUp={handleMiniPlayerTouchEnd}
           onMouseLeave={handleMiniPlayerTouchEnd}
-          style={{ borderRadius: '16px', margin: '8px', bottom: '60px', width: 'calc(100% - 16px)' }}
         >
           {/* Glassy Background Effect */}
           <div className="mini-player-bg-blur" style={{ backgroundImage: `url(${getSongImage(currentTrack)})` }}></div>

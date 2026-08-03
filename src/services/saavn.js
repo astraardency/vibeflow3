@@ -84,25 +84,54 @@ export const searchSongs = async (query, limit = 40) => {
     return searchCache.get(cacheKey);
   }
 
-  // Check sessionStorage for search query caching
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < 15 * 60 * 1000) { // 15 mins cache
+      if (Date.now() - parsed.timestamp < 15 * 60 * 1000) {
         searchCache.set(cacheKey, parsed.data);
         return parsed.data;
       }
     }
-  } catch (e) { }
+  } catch (e) { console.warn('Storage quota exceeded', e); }
 
   try {
-    const data = await fetchWithRetry(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
+    // Dual API Fetch to get missing songs
+    const primaryApi = import.meta.env.VITE_SAAVN_API_PRIMARY || 'https://saavn.dev/api';
+    const secondaryApi = import.meta.env.VITE_SAAVN_API_SECONDARY || 'https://jiosaavn-api-v3.vercel.app/api';
+    const path = `/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`;
 
-    const rawResults = data?.data?.results || data?.results || (Array.isArray(data?.data) ? data.data : null);
+    const [primaryRes, secondaryRes] = await Promise.allSettled([
+      fetch(`${primaryApi}${path}`).then(res => res.ok ? res.json() : null),
+      fetch(`${secondaryApi}${path}`).then(res => res.ok ? res.json() : null)
+    ]);
 
-    if (rawResults && Array.isArray(rawResults)) {
-      let songs = rawResults.map(formatSongData).filter(s => s && s.audioUrl);
+    let combinedRaw = [];
+    if (primaryRes.status === 'fulfilled' && primaryRes.value) {
+      const data = primaryRes.value;
+      const raw = data?.data?.results || data?.results || (Array.isArray(data?.data) ? data.data : []);
+      combinedRaw = [...combinedRaw, ...raw];
+    }
+    if (secondaryRes.status === 'fulfilled' && secondaryRes.value) {
+      const data = secondaryRes.value;
+      const raw = data?.data?.results || data?.results || (Array.isArray(data?.data) ? data.data : []);
+      combinedRaw = [...combinedRaw, ...raw];
+    }
+
+    if (combinedRaw.length > 0) {
+      let songs = combinedRaw.map(formatSongData).filter(s => s && s.audioUrl);
+
+      // De-duplicate by title + artist
+      const unique = [];
+      const seen = new Set();
+      for (const song of songs) {
+        const key = `${(song.title || '').toLowerCase()}-${(song.artist || '').toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(song);
+        }
+      }
+      songs = unique;
 
       const targetLangs = ['english', 'korean', 'japanese'];
       songs.sort((a, b) => {
@@ -113,17 +142,15 @@ export const searchSongs = async (query, limit = 40) => {
         return bPrio - aPrio;
       });
 
-      // Cache in-memory
       searchCache.set(cacheKey, songs);
       setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
 
-      // Cache in sessionStorage
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({
           data: songs,
           timestamp: Date.now()
         }));
-      } catch (e) { }
+      } catch (e) { console.warn('Storage quota exceeded', e); }
 
       return songs;
     }
@@ -155,7 +182,7 @@ export const searchArtists = async (query, limit = 5) => {
         return parsed.data;
       }
     }
-  } catch (e) { }
+  } catch (e) { console.warn('Storage quota exceeded', e); }
 
   try {
     const data = await fetchWithRetry(`/search/artists?query=${encodeURIComponent(query)}&limit=${limit}`);
@@ -183,7 +210,7 @@ export const searchArtists = async (query, limit = 5) => {
           data: artists,
           timestamp: Date.now()
         }));
-      } catch (e) { }
+      } catch (e) { console.warn('Storage quota exceeded', e); }
 
       return artists;
     }
@@ -213,7 +240,7 @@ export const getPlayableStreamForSong = async (song) => {
   if (!saavnId && queryStr) {
     try {
       saavnId = localStorage.getItem(queryCacheKey);
-    } catch (e) { }
+    } catch (e) { console.warn('Storage quota exceeded', e); }
   }
 
   // 2. If we have Saavn ID, check details cache (in-memory or sessionStorage)
@@ -233,7 +260,7 @@ export const getPlayableStreamForSong = async (song) => {
             songCache.set(cacheKey, cachedSong);
           }
         }
-      } catch (e) { }
+      } catch (e) { console.warn('Storage quota exceeded', e); }
     }
 
     if (cachedSong && cachedSong.audioUrl) {
@@ -253,7 +280,7 @@ export const getPlayableStreamForSong = async (song) => {
         if (queryStr) {
           localStorage.setItem(queryCacheKey, saavnId);
         }
-      } catch (e) { }
+      } catch (e) { console.warn('Storage quota exceeded', e); }
       return directMatch;
     }
   }
@@ -403,7 +430,7 @@ export const getPlayableStreamForSong = async (song) => {
       if (queryStr) {
         localStorage.setItem(queryCacheKey, playableResult.id);
       }
-    } catch (e) { }
+    } catch (e) { console.warn('Storage quota exceeded', e); }
   }
 
   return playableResult;
@@ -430,7 +457,7 @@ export const getSongDetails = async (id) => {
         return parsed.data;
       }
     }
-  } catch (e) { }
+  } catch (e) { console.warn('Storage quota exceeded', e); }
 
   try {
     const data = await fetchWithRetry(`/songs/${id}`);
@@ -450,7 +477,7 @@ export const getSongDetails = async (id) => {
             data: result,
             timestamp: Date.now()
           }));
-        } catch (e) { }
+        } catch (e) { console.warn('Storage quota exceeded', e); }
       }
       return result;
     }

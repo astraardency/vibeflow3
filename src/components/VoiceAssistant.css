@@ -1,0 +1,97 @@
+.voice-assistant-fab {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1db954, #1ed760);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.voice-assistant-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.voice-assistant-fab:active {
+  transform: scale(0.95);
+}
+
+/* Pulsing effect when listening */
+.voice-assistant-fab.listening {
+  background: linear-gradient(135deg, #ff416c, #ff4b2b);
+}
+
+.listening-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(255, 65, 108, 0.6);
+  z-index: -1;
+  animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Toast Message */
+.voice-assistant-toast {
+  position: fixed;
+  bottom: 170px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  max-width: 250px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: fade-in-up 0.3s ease;
+  border-left: 3px solid #1db954;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Adjust for desktop layout if needed */
+@media (min-width: 1024px) {
+  .voice-assistant-fab {
+    bottom: 120px;
+    right: 40px;
+  }
+  .voice-assistant-toast {
+    bottom: 190px;
+    right: 40px;
+  }
+}

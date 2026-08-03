@@ -12,6 +12,7 @@ import { PlayerProvider } from './contexts/PlayerContext.jsx'
 import { LiveConnectProvider } from './contexts/LiveConnectContext.jsx'
 import { AppProvider } from './contexts/AppContext.jsx'
 import { PlaylistProvider } from './contexts/PlaylistContext.jsx'
+import { PlayerTimeProvider } from './contexts/PlayerTimeContext.jsx'
 
 import { DeviceConnectProvider } from './contexts/DeviceConnectContext.jsx'
 
@@ -20,15 +21,17 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <AuthProvider>
         <DeviceConnectProvider>
-          <PlayerProvider>
-            <LiveConnectProvider>
-              <AppProvider>
-                <PlaylistProvider>
-                  {isTVMode ? <TVApp /> : <App />}
-                </PlaylistProvider>
-              </AppProvider>
-            </LiveConnectProvider>
-          </PlayerProvider>
+          <PlayerTimeProvider>
+            <PlayerProvider>
+              <LiveConnectProvider>
+                <AppProvider>
+                  <PlaylistProvider>
+                    {isTVMode ? <TVApp /> : <App />}
+                  </PlaylistProvider>
+                </AppProvider>
+              </LiveConnectProvider>
+            </PlayerProvider>
+          </PlayerTimeProvider>
         </DeviceConnectProvider>
       </AuthProvider>
     </ErrorBoundary>

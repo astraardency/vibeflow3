@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc, onSnapshot, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot, getDocs, collection, addDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { Capacitor } from '@capacitor/core';
 
@@ -281,6 +281,63 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isDarkMode]);
 
+  const lastCountedTrackIdRef = useRef(null);
+
+  const trackSongPlay = React.useCallback((trackToTrack) => {
+    if (!trackToTrack) return;
+    const trackIdentifier = trackToTrack.id || trackToTrack.title;
+    if (lastCountedTrackIdRef.current === trackIdentifier) return;
+    
+    lastCountedTrackIdRef.current = trackIdentifier;
+
+    setPlaysCount(prev => {
+      const newCount = (prev || 0) + 1;
+      localStorage.setItem('plays_count', newCount.toString());
+      return newCount;
+    });
+
+    setDailyPlays(prev => {
+      const newDaily = [...(prev || [0, 0, 0, 0, 0, 0, 0])];
+      const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
+      newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
+      return newDaily;
+    });
+
+    setArtistPlays(prev => {
+      const newCounts = { ...(prev || {}) };
+      if (trackToTrack.artist) {
+        const artists = trackToTrack.artist.split(',').map(a => a.trim());
+        artists.forEach(a => {
+          newCounts[a] = (newCounts[a] || 0) + 1;
+        });
+      }
+      localStorage.setItem('artist_plays', JSON.stringify(newCounts));
+      return newCounts;
+    });
+
+    setListeningActivity(prev => {
+      const filtered = (prev || []).filter(s => s.title !== trackToTrack.title);
+      const updated = [trackToTrack, ...filtered].slice(0, 15);
+      localStorage.setItem('listening_activity', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (currentUser && !currentUser.isAnonymous) {
+      try {
+        addDoc(collection(db, 'listening_history'), {
+          userId: currentUser.uid,
+          username: currentUser.displayName || currentUser.email || 'Unknown',
+          songId: trackToTrack.id || '',
+          songTitle: trackToTrack.title || '',
+          artist: trackToTrack.artist || '',
+          timestamp: new Date().toISOString()
+        }).catch(e => console.warn('Could not save to listening_history:', e));
+      } catch (e) {
+        console.error("Error saving listening history:", e);
+      }
+    }
+  }, [currentUser]);
+
   const toggleLike = (songTitle, e, triggerToast) => {
     if (e) e.stopPropagation();
     if (!songTitle) return;
@@ -311,7 +368,8 @@ export const AuthProvider = ({ children }) => {
     setIsDarkMode,
     savedPlaylistIds,
     setSavedPlaylistIds,
-    toggleLike
+    toggleLike,
+    trackSongPlay
   };
 
   return (

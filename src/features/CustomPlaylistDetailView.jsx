@@ -38,25 +38,25 @@ export default function CustomPlaylistDetailView({
 
   return (
     <div className="playlist-container">
-      <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="playlist-header" style={{ justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => {
           setSelectedPlaylist(null)
           setPlaylistSearchQuery('')
           setPlaylistSearchResults([])
-        }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+        }} style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer', zIndex: 2 }}>
           <ArrowLeft size={22} />
         </button>
-        <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'white', margin: 0 }}>{selectedPlaylist.name}</h3>
-        {(isCreator || isHost) && (
+        <h3 className="playlist-header-title" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', fontWeight: '600', color: 'white', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '50%', zIndex: 1 }}>{selectedPlaylist.name}</h3>
+        {(isCreator || isHost) ? (
           <button
             className="playlist-delete-btn focusable"
             tabIndex={0}
             onClick={() => handleDeletePlaylist(selectedPlaylist.id)}
-            style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+            style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '14px', fontWeight: '500', zIndex: 2 }}
           >
             Delete Playlist
           </button>
-        )}
+        ) : <div style={{ width: '40px' }} />}
       </div>
 
       <div className="playlist-banner" style={{
@@ -210,7 +210,7 @@ export default function CustomPlaylistDetailView({
         <span>ACTION</span>
       </div>
 
-      <div className="playlist-songs-list hide-scrollbar" style={{ overflowY: 'auto' }}>
+      <div className="playlist-songs-list hide-scrollbar">
         {(selectedPlaylist.songs?.length || 0) === 0 ? (
           <div className="no-songs-placeholder" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
             No songs in this playlist yet. Add songs below!

@@ -127,7 +127,7 @@ const LibraryContainer = ({ isLikedSongsOpen, setIsLikedSongsOpen, setShowCreate
       return
     }
     setIsSearchingPlaylistSongs(true)
-    const { searchSongs } = await import('../services/saavn');
+    const { searchSongs } = await import('../services/musicService');
     const results = await searchSongs(query)
     setPlaylistSearchResults(results)
     setIsSearchingPlaylistSongs(false)

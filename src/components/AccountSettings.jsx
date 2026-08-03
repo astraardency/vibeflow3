@@ -35,6 +35,9 @@ const AccountSettings = ({ onClose }) => {
   const [currentView, setCurrentView] = useState('main'); // 'main', 'privacy', 'data_saving', 'media_quality', 'about', 'host_dashboard'
   const [hostPlaylists, setHostPlaylists] = useState([]);
   const [isHost, setIsHost] = useState(false);
+  const [showHostLoginModal, setShowHostLoginModal] = useState(false);
+  const [hostPinInput, setHostPinInput] = useState('');
+  const [hostLoginError, setHostLoginError] = useState('');
 
   // Settings States
   const [followersFollowing, setFollowersFollowing] = useState(() => localStorage.getItem('pref_followers') !== 'false');
@@ -114,7 +117,7 @@ const AccountSettings = ({ onClose }) => {
   useEffect(() => {
     if (isCapacitor) {
       GoogleAuth.initialize({
-        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID_ENC ? atob(import.meta.env.VITE_GOOGLE_CLIENT_ID_ENC) : '',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });
@@ -445,34 +448,46 @@ const AccountSettings = ({ onClose }) => {
     }
   };
 
-  const handleHostDashboardLogin = async () => {
-    const pin = window.prompt("Enter Host PIN to access dashboard:");
-    if (!pin) return;
+  const handleHostDashboardClick = () => {
+    setShowHostLoginModal(true);
+    setHostPinInput('');
+    setHostLoginError('');
+  };
+
+  const handleHostDashboardSubmit = async (e) => {
+    e?.preventDefault();
+    if (!hostPinInput) return;
     
     try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(pin);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
       const storedHash = import.meta.env.VITE_HOST_PIN_HASH;
       
       if (!storedHash) {
-        alert("Host PIN is not securely configured in .env");
+        setHostLoginError("Host PIN is not securely configured in .env");
         return;
       }
       
-      if (hashHex === storedHash) {
+      const isBase64Match = btoa(hostPinInput) === storedHash;
+      let hashHex = '';
+
+      if (crypto.subtle) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(hostPinInput);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      if ((hashHex && hashHex === storedHash) || isBase64Match) {
         setIsHost(true);
         setCurrentView('host_dashboard');
+        setShowHostLoginModal(false);
         fetchHostPlaylists();
       } else {
-        alert("Invalid PIN.");
+        setHostLoginError("Invalid PIN.");
       }
     } catch (e) {
       console.error("Error verifying PIN:", e);
-      alert("Error verifying PIN.");
+      setHostLoginError("Error verifying PIN.");
     }
   };
 
@@ -589,7 +604,7 @@ const AccountSettings = ({ onClose }) => {
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>↓</div>} title="Data-saving and offline" subtitle="Data Saver mode • Downloads over cellular" onClick={() => setCurrentView('data_saving')} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📶</div>} title="Media quality" subtitle="Wi-Fi streaming quality • Audio download quality" onClick={() => setCurrentView('media_quality')} />
       <ListItem icon={<div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>ℹ️</div>} title="About and support" subtitle="Version • Privacy Policy" onClick={() => setCurrentView('about')} />
-      <ListItem icon={<Lock size={24} color="#ff3b30" />} title="Host Dashboard" subtitle="Manage users and playlists" onClick={handleHostDashboardLogin} />
+      <ListItem icon={<Lock size={24} color="#ff3b30" />} title="Host Dashboard" subtitle="Manage users and playlists" onClick={handleHostDashboardClick} />
 
       <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0' }}>
         <button className="settings-logout-btn" onClick={handleLogout}>Log out</button>
@@ -929,6 +944,30 @@ const AccountSettings = ({ onClose }) => {
           <div className="scanner-target-box"></div>
           <p className="scanner-instruction">Point your camera at a Vibeflow TV code</p>
           <button className="scanner-cancel-btn" onClick={stopScan}>Cancel</button>
+        </div>
+      )}
+
+      {showHostLoginModal && (
+        <div className="host-login-modal-overlay">
+          <div className="host-login-modal glass-panel">
+            <h3 className="gradient-text" style={{ fontSize: 24, margin: '0 0 8px 0' }}>Host Access</h3>
+            <p className="sub-section-desc" style={{ textAlign: 'center', marginBottom: 24 }}>Enter your Host PIN to access the dashboard.</p>
+            <form onSubmit={handleHostDashboardSubmit} className="host-login-form">
+              <input 
+                type="password" 
+                value={hostPinInput} 
+                onChange={(e) => setHostPinInput(e.target.value)} 
+                placeholder="Enter PIN"
+                autoFocus
+                className="host-pin-input"
+              />
+              {hostLoginError && <p className="host-error-text">{hostLoginError}</p>}
+              <div className="host-modal-actions">
+                <button type="button" className="host-cancel-btn" onClick={() => setShowHostLoginModal(false)}>Cancel</button>
+                <button type="submit" className="host-submit-btn">Unlock</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

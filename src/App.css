@@ -1374,14 +1374,12 @@ html {
   overflow-y: auto;
   padding: var(--spacing-md) var(--spacing-md) 180px var(--spacing-md);
   background-color: var(--bg-color);
-  display: flex;
-  flex-direction: column;
 }
 
 /* Floating Mini Player styling for Mobile */
 .mini-player {
   position: fixed;
-  bottom: 84px;
+  bottom: 104px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
@@ -2009,14 +2007,18 @@ html {
 /* Playlist View Styling */
 .playlist-container {
   padding: var(--spacing-xl) var(--spacing-md) 100px var(--spacing-md);
-  animation: fadeIn 0.3s ease;
-  display: flex;
-  flex-direction: column;
   background-color: var(--bg-color);
   min-height: 100vh;
 }
 
 .playlist-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgba(18, 18, 18, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   margin-bottom: var(--spacing-lg);
@@ -2911,9 +2913,19 @@ html {
   background-color: var(--border-color);
 }
 
-.playlist-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background-color: var(--bg-color, #121212);
+/* Force mobile playlist header to float (fixed position) */
+@media (max-width: 767px) {
+  .playlist-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100 !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .playlist-container {
+    padding-top: 80px !important;
+  }
 }

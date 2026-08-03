@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { searchArtists } from '../services/saavn';
+import { searchArtists } from '../services/musicService';
 
 const imageCache = new Map();
 

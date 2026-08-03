@@ -861,3 +861,95 @@ body.scanner-active .modern-auth-container {
 a {
   color: #1ed760;
 }
+
+/* Host Login Modal */
+.host-login-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.host-login-modal {
+  width: 90%;
+  max-width: 400px;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.host-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.host-pin-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 4px;
+  font-weight: 700;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.host-pin-input:focus {
+  border-color: var(--card-orange, #f5954a);
+  box-shadow: 0 0 0 2px rgba(245, 149, 74, 0.2);
+}
+
+.host-error-text {
+  color: #ff3b30;
+  font-size: 14px;
+  text-align: center;
+  margin: 0;
+}
+
+.host-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.host-cancel-btn, .host-submit-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.host-cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.host-submit-btn {
+  background: linear-gradient(135deg, var(--card-orange, #f5954a), #e07a30);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 149, 74, 0.3);
+}
+
+.host-cancel-btn:active, .host-submit-btn:active {
+  transform: scale(0.96);
+}

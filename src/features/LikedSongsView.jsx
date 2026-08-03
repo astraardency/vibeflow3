@@ -15,12 +15,12 @@ export default function LikedSongsView({
 }) {
   return (
     <div className="playlist-container">
-      <div className="playlist-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => setIsLikedSongsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+      <div className="playlist-header" style={{ justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <button className="playlist-back-btn focusable" tabIndex={0} onClick={() => setIsLikedSongsOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-color)', display: 'flex', alignItems: 'center', cursor: 'pointer', zIndex: 2 }}>
           <ArrowLeft size={22} />
         </button>
-        <h3 className="playlist-header-title" style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-color)', margin: 0 }}>Liked Songs</h3>
-        <div style={{ width: '40px' }}></div> {/* Spacer to center title */}
+        <h3 className="playlist-header-title" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', fontWeight: '600', color: 'var(--text-color)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '50%', zIndex: 1 }}>Liked Songs</h3>
+        <div style={{ width: '40px' }}></div>
       </div>
 
       <div className="playlist-banner" style={{ background: 'linear-gradient(135deg, #f7d2d2 0%, #ebb4b4 100%)', padding: '30px 20px', borderRadius: '16px', margin: '20px 0', position: 'relative', overflow: 'hidden' }}>
@@ -59,7 +59,7 @@ export default function LikedSongsView({
         <span>ACTION</span>
       </div>
 
-      <div className="playlist-songs-list hide-scrollbar" style={{ overflowY: 'auto' }}>
+      <div className="playlist-songs-list hide-scrollbar">
         {getLikedSongsList().length === 0 ? (
           <div className="no-songs-placeholder" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
             No liked songs yet. Like some tracks to see them here!

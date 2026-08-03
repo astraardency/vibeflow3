@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { usePlayer } from './contexts/PlayerContext';
+import { usePlayerTime } from './contexts/PlayerTimeContext';
 import { usePlaylists } from './contexts/PlaylistContext';
 import { useSpatialNavigation } from './hooks/useSpatialNavigation';
 import { Home, Search, Library, User, Play, Pause, SkipForward, SkipBack, Shuffle, Repeat } from 'lucide-react';
 import { doc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db } from './services/firebase';
 import { generateSecureToken } from './utils/cryptoUtils';
-import { searchSongs, searchArtists } from './services/saavn';
+import { searchSongs, searchArtists } from './services/musicService';
 import './TVApp.css';
 
 export default function TVApp() {
@@ -15,8 +16,9 @@ export default function TVApp() {
   const { currentUser, isUserDataLoaded, likedSongs, listeningActivity = [], playsCount } = useAuth() || {};
   const { 
     currentTrack, isPlaying, togglePlay, playNextSong, playPreviousSong, 
-    currentTime, duration, playSong, activePlaybackQueue, prefetchSong
+    playSong, activePlaybackQueue, prefetchSong
   } = usePlayer() || {};
+  const { currentTime, duration } = usePlayerTime() || {};
   const { playlists = [] } = usePlaylists() || {};
   
   const [activeTab, setActiveTab] = useState('home'); // home, search, library, account, player

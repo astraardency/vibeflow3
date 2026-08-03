@@ -18,7 +18,7 @@ import HeroCard from './components/HeroCard'
 import SuggestedSongsList from './components/SuggestedSongsList'
 const MagicShuffle = lazy(() => import('./components/MagicShuffle'))
 import BottomNav from './components/BottomNav'
-import { searchSongs, searchPlaylists, getPlaylistDetails, getPlayableStreamForSong, getSongDetails } from './services/saavn'
+import { searchSongs, searchPlaylists, getPlaylistDetails, getPlayableStreamForSong, getSongDetails } from './services/musicService'
 import { MediaSession } from '@jofr/capacitor-media-session';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
@@ -44,6 +44,7 @@ const VibeStatsView = lazy(() => import('./features/VibeStatsView'))
 import { useDeviceConnect } from './contexts/DeviceConnectContext'
 import { useAuth } from './contexts/AuthContext'
 import { usePlayer } from './contexts/PlayerContext'
+import { usePlayerTime } from './contexts/PlayerTimeContext'
 import { useLiveConnect } from './contexts/LiveConnectContext'
 import { useAppContext } from './contexts/AppContext'
 
@@ -51,6 +52,7 @@ import { usePlaylists } from './contexts/PlaylistContext';
 import AsyncArtistImage from './components/AsyncArtistImage';
 
 const DownloadContainer = lazy(() => import('./components/DownloadContainer'))
+import VoiceAssistant from './components/VoiceAssistant'
 import './App.css'
 
 const WidgetPlugin = registerPlugin('WidgetPlugin');
@@ -141,8 +143,6 @@ function App() {
     currentTrack, setCurrentTrack,
     isPlaying, setIsPlaying,
     isLoadingSong,
-    currentTime, setCurrentTime,
-    duration, setDuration,
     isShuffleMode, toggleShuffle,
     currentTrackIndex, setCurrentTrackIndex,
     activePlaybackQueue, setActivePlaybackQueue,
@@ -150,6 +150,8 @@ function App() {
     playSong, playNextSong, playPreviousSong, togglePlay,
     prefetchSong, preloadAudioFile
   } = usePlayer();
+
+  const { currentTime, setCurrentTime, duration, setDuration } = usePlayerTime();
 
   const [prefetchingNext, setPrefetchingNext] = useState(false)
   const [isDesktopFullscreenOpen, setIsDesktopFullscreenOpen] = useState(false)
@@ -297,85 +299,10 @@ function App() {
   const [showAllComposers, setShowAllComposers] = useState(false);
   // artistPlays and listeningActivity are synced via AuthContext
 
-  const lastCountedTrackIdRef = useRef(null);
-
-  const trackSongPlay = useCallback((trackToTrack) => {
-    if (!trackToTrack) return;
-    const trackIdentifier = trackToTrack.id || trackToTrack.title;
-    if (lastCountedTrackIdRef.current === trackIdentifier) return;
-    
-    lastCountedTrackIdRef.current = trackIdentifier;
-
-    setPlaysCount(prev => {
-      const newCount = (prev || 0) + 1;
-      localStorage.setItem('plays_count', newCount.toString());
-      return newCount;
-    });
-
-    setDailyPlays(prev => {
-      const newDaily = [...(prev || [0, 0, 0, 0, 0, 0, 0])];
-      const dayIdx = (new Date().getDay() + 6) % 7; // Monday=0, Sunday=6
-      newDaily[dayIdx] = (newDaily[dayIdx] || 0) + 1;
-      return newDaily;
-    });
-
-    setArtistPlays(prev => {
-      const newCounts = { ...(prev || {}) };
-      if (trackToTrack.artist) {
-        const artists = trackToTrack.artist.split(',').map(a => a.trim());
-        artists.forEach(a => {
-          newCounts[a] = (newCounts[a] || 0) + 1;
-        });
-      }
-      localStorage.setItem('artist_plays', JSON.stringify(newCounts));
-      return newCounts;
-    });
-
-    setListeningActivity(prev => {
-      const filtered = (prev || []).filter(s => s.title !== trackToTrack.title);
-      const updated = [trackToTrack, ...filtered].slice(0, 15);
-      localStorage.setItem('listening_activity', JSON.stringify(updated));
-      return updated;
-    });
-
-    if (currentUser && !currentUser.isAnonymous) {
-      try {
-        addDoc(collection(db, 'listening_history'), {
-          userId: currentUser.uid,
-          username: currentUser.displayName || currentUser.email || 'Unknown',
-          songId: trackToTrack.id || '',
-          songTitle: trackToTrack.title || '',
-          artist: trackToTrack.artist || '',
-          timestamp: new Date().toISOString()
-        }).catch(e => console.warn('Could not save to listening_history:', e));
-      } catch (e) {
-        console.error("Error saving listening history:", e);
-      }
-    }
-  }, [currentUser, setPlaysCount, setDailyPlays, setArtistPlays, setListeningActivity]);
-
-  // Track plays when a new song starts
-  useEffect(() => {
-    if (currentTrack && isPlaying && isLocalDeviceActive) {
-      trackSongPlay(currentTrack);
-    }
-  }, [currentTrack, isPlaying, isLocalDeviceActive, trackSongPlay]);
-
   const queueRef = useRef(activePlaybackQueue);
   useEffect(() => {
     queueRef.current = activePlaybackQueue;
   }, [activePlaybackQueue]);
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    const sub = NativeAudio.addListener('onTrackChanged', (data) => {
-      const queue = queueRef.current;
-      if (queue && queue[data.index]) {
-         trackSongPlay(queue[data.index]);
-      }
-    });
-    return () => { sub.then(s => s.remove()); };
-  }, [trackSongPlay]);
 
   // Diagnostic utility for the user to cross check broken songs
   useEffect(() => {
@@ -3007,6 +2934,9 @@ function App() {
       <Suspense fallback={null}>
         <DeviceConnectModal />
       </Suspense>
+
+      {/* Voice Assistant */}
+      <VoiceAssistant />
 
       {/* Mini Player React Portal */}
       {pipWindow && createPortal(

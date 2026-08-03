@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { getPlayableStreamForSong } from '../services/saavn';
+import { getPlayableStreamForSong } from '../services/musicService';
 import { useDeviceConnect } from './DeviceConnectContext';
 import { getSongBlob } from '../services/idb';
+import { useAuth } from './AuthContext';
+import { usePlayerTime } from './PlayerTimeContext';
 
 const NativeAudio = registerPlugin('NativeAudio');
 
@@ -13,6 +15,9 @@ const PlayerContext = createContext();
 export const usePlayer = () => useContext(PlayerContext);
 
 export const PlayerProvider = ({ children }) => {
+  const { trackSongPlay } = useAuth() || {};
+  const { currentTime, setCurrentTime, duration, setDuration } = usePlayerTime();
+  
   const [currentTrack, setCurrentTrack] = useState(() => {
     try {
       const saved = localStorage.getItem('lastPlayedTrack');
@@ -21,8 +26,6 @@ export const PlayerProvider = ({ children }) => {
   });
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingSong, setIsLoadingSong] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [isShuffleMode, setIsShuffleMode] = useState(false);
   const [prefetchingNext, setPrefetchingNext] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(() => {
@@ -55,6 +58,7 @@ export const PlayerProvider = ({ children }) => {
 
   const playNextRef = useRef(null);
   const playPrevRef = useRef(null);
+  const playDebounceRef = useRef(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -73,6 +77,7 @@ export const PlayerProvider = ({ children }) => {
           setCurrentTrackIndex(data.index);
           setCurrentTrack(queue[data.index]);
           setCurrentTime(0);
+          if (trackSongPlay) trackSongPlay(queue[data.index]);
         }
       }),
       NativeAudio.addListener('onNext', () => {
@@ -247,6 +252,10 @@ export const PlayerProvider = ({ children }) => {
 
   const playSong = async (song, index = -1, queueToUse = null, callbacks = {}, startTime = null) => {
     if (!song) return;
+    if (playDebounceRef.current) return;
+    playDebounceRef.current = true;
+    setTimeout(() => { playDebounceRef.current = false; }, 300);
+
     if (!isLocalDeviceActive) {
       const safeQueue = queueToUse ? queueToUse.filter(Boolean).map(s => ({
         id: s.id, title: s.title, artist: s.artist, img: s.img, duration: s.duration, audioUrl: s.audioUrl || ''
@@ -332,6 +341,9 @@ export const PlayerProvider = ({ children }) => {
       setCurrentTrack(trackToPlay);
       if (trackToPlay.duration) setDuration(parseInt(trackToPlay.duration, 10) || 0);
 
+      // Track play synchronously when the song is initiated!
+      if (trackSongPlay && isLocalDeviceActive) trackSongPlay(trackToPlay);
+      
       // We should ideally call context-provided callbacks to track plays, but we'll leave that to consumers for now
       if (callbacks.onPlayStart) callbacks.onPlayStart(trackToPlay);
 
@@ -506,19 +518,13 @@ export const PlayerProvider = ({ children }) => {
     isPlaying: isLocalDeviceActive ? isPlaying : remotePlaybackState.isPlaying, 
     setIsPlaying,
     isLoadingSong,
-    currentTime: currentTime,
-    setCurrentTime,
-    duration, setDuration,
-    isShuffleMode, toggleShuffle,
+    isShuffleMode, toggleShuffle, setIsShuffleMode,
     currentTrackIndex, setCurrentTrackIndex,
     activePlaybackQueue, setActivePlaybackQueue,
     downloadedSongs, setDownloadedSongs,
-    playSong,
-    playNextSong,
-    playPreviousSong,
-    togglePlay,
-    prefetchSong,
-    preloadAudioFile
+    playSong, playNextSong, playPreviousSong, togglePlay,
+    prefetchSong, preloadAudioFile,
+    playNextRef, playPrevRef
   };
 
   return (

@@ -3,6 +3,7 @@ import { doc, setDoc, updateDoc, onSnapshot, query, collection, where, getDocs, 
 import { db } from '../services/firebase';
 import { useAuth } from './AuthContext';
 import { usePlayer } from './PlayerContext';
+import { usePlayerTime } from './PlayerTimeContext';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { generateSecureCode } from '../utils/cryptoUtils';
 
@@ -14,7 +15,8 @@ export const useLiveConnect = () => useContext(LiveConnectContext);
 
 export const LiveConnectProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const { currentTrack, isPlaying, currentTime, playSong, audioRef, setIsPlaying } = usePlayer();
+  const { currentTrack, isPlaying, playSong, audioRef, setIsPlaying } = usePlayer();
+  const { currentTime } = usePlayerTime();
 
   const [isLiveConnectOpen, setIsLiveConnectOpen] = useState(false);
   const [liveSessionId, setLiveSessionId] = useState(() => localStorage.getItem('live_session_id') || null);
