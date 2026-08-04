@@ -28,7 +28,7 @@
     "@babel/plugin-transform-logical-assignment-operators": "^7.24.0",
     "@babel/preset-env": "^7.24.0",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^8.5.0",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
