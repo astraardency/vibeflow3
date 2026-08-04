@@ -4,13 +4,13 @@ import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || (import.meta.env.VITE_FIREBASE_API_KEY_ENC ? atob(import.meta.env.VITE_FIREBASE_API_KEY_ENC) : ''),
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN_ENC ? atob(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN_ENC) : ''),
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || (import.meta.env.VITE_FIREBASE_PROJECT_ID_ENC ? atob(import.meta.env.VITE_FIREBASE_PROJECT_ID_ENC) : ''),
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET_ENC ? atob(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET_ENC) : ''),
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID_ENC ? atob(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID_ENC) : ''),
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || (import.meta.env.VITE_FIREBASE_APP_ID_ENC ? atob(import.meta.env.VITE_FIREBASE_APP_ID_ENC) : ''),
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || (import.meta.env.VITE_FIREBASE_MEASUREMENT_ID_ENC ? atob(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID_ENC) : '')
 };
 
 // Initialize Firebase

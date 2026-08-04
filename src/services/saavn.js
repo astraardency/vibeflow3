@@ -1,11 +1,8 @@
-const API_ENDPOINTS = [
-  import.meta.env.VITE_SAAVN_LOCAL_API,
-  'https://saavn.dev/api',
-  'https://jiosaavn-api-v3.vercel.app/api',
-  'https://jiosaavn-api-privatecvc2.vercel.app/api',
-  'https://saavn.me/api',
-  'https://saavn.sumit.co/api',
-].filter(Boolean);
+import { ENV } from '../config/env';
+import { CACHE_TTLS, DEFAULT_IMAGES } from '../config/constants';
+import { findBestMatch } from '../utils/musicMatchingUtils';
+
+const API_ENDPOINTS = ENV.SAAVN_ENDPOINTS.filter(Boolean);
 
 const songCache = new Map();
 const searchCache = new Map();
@@ -97,8 +94,8 @@ export const searchSongs = async (query, limit = 40) => {
 
   try {
     // Dual API Fetch to get missing songs
-    const primaryApi = import.meta.env.VITE_SAAVN_API_PRIMARY || 'https://saavn.dev/api';
-    const secondaryApi = import.meta.env.VITE_SAAVN_API_SECONDARY || 'https://jiosaavn-api-v3.vercel.app/api';
+    const primaryApi = ENV.SAAVN_ENDPOINTS[1] || 'https://saavn.dev/api';
+    const secondaryApi = ENV.SAAVN_ENDPOINTS[2] || 'https://jiosaavn-api-v3.vercel.app/api';
     const path = `/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`;
 
     const [primaryRes, secondaryRes] = await Promise.allSettled([
@@ -143,7 +140,7 @@ export const searchSongs = async (query, limit = 40) => {
       });
 
       searchCache.set(cacheKey, songs);
-      setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
+      setTimeout(() => searchCache.delete(cacheKey), CACHE_TTLS.SEARCH);
 
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({
@@ -177,7 +174,7 @@ export const searchArtists = async (query, limit = 5) => {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < 55 * 60 * 1000) {
+      if (Date.now() - parsed.timestamp < CACHE_TTLS.ARTIST) {
         searchCache.set(cacheKey, parsed.data);
         return parsed.data;
       }
@@ -189,7 +186,7 @@ export const searchArtists = async (query, limit = 5) => {
 
     if (data && data.data && data.data.results) {
       const artists = data.data.results.map(artist => {
-        let imgUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200&auto=format&fit=crop';
+        let imgUrl = DEFAULT_IMAGES.ARTIST;
         if (artist.image && Array.isArray(artist.image) && artist.image.length > 0) {
           imgUrl = artist.image[artist.image.length - 1].url || artist.image[artist.image.length - 1].link || imgUrl;
         } else if (typeof artist.image === 'string') {
@@ -203,7 +200,7 @@ export const searchArtists = async (query, limit = 5) => {
       });
 
       searchCache.set(cacheKey, artists);
-      setTimeout(() => searchCache.delete(cacheKey), 5 * 60 * 1000);
+      setTimeout(() => searchCache.delete(cacheKey), CACHE_TTLS.SEARCH);
 
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({
@@ -255,7 +252,7 @@ export const getPlayableStreamForSong = async (song) => {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Date.now() - parsed.timestamp < 25 * 60 * 1000) { // 25 mins validity
+          if (Date.now() - parsed.timestamp < CACHE_TTLS.SONG_DETAILS) { // 25 mins validity
             cachedSong = parsed.data;
             songCache.set(cacheKey, cachedSong);
           }
@@ -285,132 +282,14 @@ export const getPlayableStreamForSong = async (song) => {
     }
   }
 
-  // 3. Complete Cache Miss - Do search and match logic
-  const findBestMatch = (searchResultList) => {
-    let match = null;
-
-    const isFromLocalPlaylist = song.id && typeof song.id === 'string' && song.id.startsWith('song_');
-
-    // Helper to check invalid tracks
-    const isInvalidTrack = (r) => {
-      const rTitle = (r.title || '').toLowerCase();
-      const rAlbum = (r.album || '').toLowerCase();
-      const isNonOriginal = rTitle.includes('lofi') || rTitle.includes('lo-fi') || rTitle.includes('remix') || rTitle.includes('cover') || rTitle.includes('karaoke') || rTitle.includes('instrumental') || rTitle.includes('bgm') || rTitle.includes('mashup') || rAlbum.includes('shivaratri') || rAlbum.includes('devotional') || rAlbum.includes('bhakti');
-      return isNonOriginal;
-    };
-
-    // First pass: match both album/movie AND exact title AND artist
-    match = searchResultList.find(r => {
-      if (!r.audioUrl) return false;
-      if (isInvalidTrack(r)) return false;
-      const rTitle = (r.title || '').toLowerCase();
-      const rAlbum = (r.album || '').toLowerCase();
-      const rArtist = (r.artist || '').toLowerCase();
-      const songTitleLower = cleanTitle.toLowerCase();
-      const movieLower = movie.toLowerCase();
-      const songArtistLower = primaryArtist.toLowerCase();
-
-      const albumMatches = movieLower && (rAlbum.includes(movieLower) || movieLower.includes(rAlbum));
-      const titleMatches = rTitle === songTitleLower || rTitle.includes(songTitleLower) || songTitleLower.includes(rTitle);
-      const artistMatches = !songArtistLower || rArtist.includes(songArtistLower) || songArtistLower.includes(rArtist);
-      return albumMatches && titleMatches && artistMatches;
-    });
-
-    // Second pass: match both album/movie AND exact title (relaxing artist)
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        if (isInvalidTrack(r)) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const rAlbum = (r.album || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        const movieLower = movie.toLowerCase();
-
-        const albumMatches = movieLower && (rAlbum.includes(movieLower) || movieLower.includes(rAlbum));
-        const titleMatches = rTitle === songTitleLower || rTitle.includes(songTitleLower) || songTitleLower.includes(rTitle);
-        return albumMatches && titleMatches;
-      });
-    }
-
-    // Third pass: exact title match AND artist match
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        if (isInvalidTrack(r)) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const rArtist = (r.artist || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        const songArtistLower = primaryArtist.toLowerCase();
-
-        const artistMatches = !songArtistLower || rArtist.includes(songArtistLower) || songArtistLower.includes(rArtist);
-        return rTitle === songTitleLower && artistMatches;
-      });
-    }
-
-    // Fourth pass: title includes AND artist match
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        if (isInvalidTrack(r)) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const rArtist = (r.artist || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        const songArtistLower = primaryArtist.toLowerCase();
-
-        const artistMatches = !songArtistLower || rArtist.includes(songArtistLower) || songArtistLower.includes(rArtist);
-        return (rTitle.includes(songTitleLower) || songTitleLower.includes(rTitle)) && artistMatches;
-      });
-    }
-
-    // Fifth pass: exact title match only
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        if (isInvalidTrack(r)) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        return rTitle === songTitleLower;
-      });
-    }
-
-    // Fourth pass: artist + fuzzy title
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        if (isInvalidTrack(r)) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const rArtist = (r.artist || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        const songArtistLower = primaryArtist.toLowerCase();
-
-        const artistMatches = songArtistLower && rArtist.includes(songArtistLower);
-        const titleWords = songTitleLower.split(' ').filter(w => w.length > 2);
-        const titleFuzzyMatch = titleWords.length > 0 ? titleWords.some(w => rTitle.includes(w)) : true;
-        return artistMatches && titleFuzzyMatch;
-      });
-    }
-
-    // Fifth pass: partial title match
-    if (!match) {
-      match = searchResultList.find(r => {
-        if (!r.audioUrl) return false;
-        const rTitle = (r.title || '').toLowerCase();
-        const songTitleLower = cleanTitle.toLowerCase();
-        const titleWords = songTitleLower.split(' ').filter(w => w.length > 2);
-        return titleWords.some(w => rTitle.includes(w));
-      });
-    }
-    return match;
-  };
-
   let results = await searchSongs(queryStr, 20);
-  let playableResult = (results && results.length > 0) ? findBestMatch(results) : null;
+  let playableResult = (results && results.length > 0) ? findBestMatch(results, cleanTitle, primaryArtist, movie, song) : null;
 
   // Fallback: search with only the clean title
   if (!playableResult && cleanTitle) {
     const fallbackResults = await searchSongs(cleanTitle, 20);
     if (fallbackResults && fallbackResults.length > 0) {
-      playableResult = findBestMatch(fallbackResults);
+      playableResult = findBestMatch(fallbackResults, cleanTitle, primaryArtist, movie, song);
     }
   }
 
@@ -452,7 +331,7 @@ export const getSongDetails = async (id) => {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < 25 * 60 * 1000) { // 25 mins validity
+      if (Date.now() - parsed.timestamp < CACHE_TTLS.SONG_DETAILS) { // 25 mins validity
         songCache.set(cacheKey, parsed.data);
         return parsed.data;
       }
@@ -493,7 +372,7 @@ export const getSongDetails = async (id) => {
  */
 const formatSongData = (song) => {
   if (!song) return null;
-  let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
+  let imgUrl = DEFAULT_IMAGES.PLACEHOLDER;
   if (song.image && Array.isArray(song.image) && song.image.length > 0) {
     const isStringArray = typeof song.image[0] === 'string';
     if (isStringArray) {
@@ -506,7 +385,7 @@ const formatSongData = (song) => {
     imgUrl = song.image;
   }
   if (!imgUrl || imgUrl.includes('default_') || imgUrl.includes('placeholder')) {
-    imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
+    imgUrl = DEFAULT_IMAGES.PLACEHOLDER;
   }
 
   // Extract best quality download URL (prefer 320kbps, fall back to 160kbps, then others)
@@ -577,7 +456,7 @@ export const searchPlaylists = async (query, limit = 20) => {
 
     if (data && data.data && data.data.results) {
       return data.data.results.map(playlist => {
-        let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
+        let imgUrl = DEFAULT_IMAGES.PLACEHOLDER;
         if (playlist.image && Array.isArray(playlist.image) && playlist.image.length > 0) {
           imgUrl = playlist.image[playlist.image.length - 1].url || playlist.image[playlist.image.length - 1].link || imgUrl;
         } else if (typeof playlist.image === 'string') {
@@ -633,7 +512,7 @@ export const getPlaylistDetails = async (id, limit = 50) => {
     }
 
     if (playlistInfo) {
-      let imgUrl = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200&auto=format&fit=crop';
+      let imgUrl = DEFAULT_IMAGES.PLACEHOLDER;
       if (playlistInfo.image && Array.isArray(playlistInfo.image) && playlistInfo.image.length > 0) {
         imgUrl = playlistInfo.image[playlistInfo.image.length - 1].url || playlistInfo.image[playlistInfo.image.length - 1].link || imgUrl;
       } else if (typeof playlistInfo.image === 'string') {
