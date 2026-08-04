@@ -82,12 +82,13 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        window.defaultSongsRaw = [];
-        window.defaultSongs = [];
+        const { default: songsData } = await import('./data/songs.js');
+        window.defaultSongsRaw = songsData;
+        window.defaultSongs = songsData.filter(song => song.language?.toLowerCase() === 'tamil' || !song.language);
         window.defaultPlaylists = [];
 
         setActivePlaybackQueue(prev => {
-          if (prev.length === 0) return [];
+          if (prev.length === 0) return window.defaultSongs.slice(0, 50);
           return prev;
         });
 
